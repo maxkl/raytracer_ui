@@ -1,7 +1,9 @@
 
+use std::io::ErrorKind;
+
 use image::{DynamicImage, GenericImage, GenericImageView, Rgb, Pixel};
 
-pub fn main() -> i32 {
+pub fn main(output_file_name: &str) -> i32 {
     let mut img = DynamicImage::new_rgb8(800, 600);
 
     let w = img.width();
@@ -16,7 +18,15 @@ pub fn main() -> i32 {
         }
     }
 
-    img.save("output.png").unwrap();
+    if let Err(err) = img.save(output_file_name) {
+        match err.kind() {
+            ErrorKind::InvalidInput => {
+                eprintln!("Error: invalid file extension");
+                return 1;
+            }
+            _ => {}
+        }
+    }
 
     0
 }

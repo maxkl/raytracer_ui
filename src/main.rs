@@ -1,10 +1,20 @@
 
-use std::process;
+use std::{env, process};
 
 use raytracer;
 
 fn wrapped_main() -> i32 {
-    raytracer::main()
+    let args = env::args().collect::<Vec<_>>();
+
+    if args.len() != 2 {
+        eprintln!("Error: incorrect number of arguments");
+        eprintln!("Usage: {} <output file name>", args[0]);
+        return 1;
+    }
+
+    let output_file_name = &args[1];
+
+    raytracer::main(output_file_name)
 }
 
 fn main() {
