@@ -18,6 +18,7 @@ fn wrapped_main() -> i32 {
 }
 
 fn main() {
+    // Wrap main to simplify returning an exit code
     let exit_code = wrapped_main();
     process::exit(exit_code);
 }
