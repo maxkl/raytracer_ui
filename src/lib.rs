@@ -4,6 +4,7 @@ mod ray;
 mod primitives;
 
 use std::io::ErrorKind;
+use std::time::Instant;
 
 use image::{DynamicImage, GenericImage, GenericImageView, Pixel};
 use cgmath::Point3;
@@ -44,8 +45,13 @@ fn render_scene() -> DynamicImage {
 
 /// Render the scene and store the resulting image at `output_file_name`
 pub fn main(output_file_name: &str) -> i32 {
+    let now = Instant::now();
+
     // Render scene
     let img = render_scene();
+
+    let duration = now.elapsed();
+    println!("Rendered scene in {:.3} ms", duration.as_micros() as f64 * 1e-3);
 
     // Save image
     if let Err(err) = img.save(output_file_name) {
