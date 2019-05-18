@@ -1,5 +1,6 @@
 
 mod color;
+mod material;
 mod ray;
 mod primitives;
 mod lights;
@@ -13,6 +14,7 @@ use image::{DynamicImage, GenericImage, GenericImageView, Pixel};
 use cgmath::{Vector3, Point3, InnerSpace};
 
 use crate::color::Color;
+use crate::material::Material;
 use crate::ray::Ray;
 use crate::primitives::{Sphere, Plane};
 use crate::lights::DirectionalLight;
@@ -43,8 +45,8 @@ fn render_scene(scene: &Scene) -> DynamicImage {
                 if in_light {
                     // Calculate color using Lambert's Cosine Law
                     let light_power = hit.normal.dot(to_light).max(0.0) * scene.light.intensity;
-                    let reflection_factor = hit.albedo / f32::consts::PI;
-                    let color = hit.color * scene.light.color * light_power * reflection_factor;
+                    let reflection_factor = hit.material.albedo / f32::consts::PI;
+                    let color = hit.material.color * scene.light.color * light_power * reflection_factor;
                     // Ensure that color components are between 0.0 and 1.0
                     color.clamp()
                 } else {
@@ -66,10 +68,10 @@ pub fn main(output_file_name: &str) -> i32 {
     let scene = Scene {
         clear_color: Color::new(0.6, 0.8, 1.0),
         objects: vec![
-            Box::new(Plane::new(Point3::new(0.0, -2.0, 0.0), Vector3::new(0.0, 1.0, 0.0), Color::new(0.2, 0.2, 0.2), 0.18)),
-            Box::new(Sphere::new(Point3::new(0.0, 0.0, -5.0), 1.0, Color::new(0.2, 1.0, 0.2), 0.18)),
-            Box::new(Sphere::new(Point3::new(-3.0, 1.0, -6.0), 2.0, Color::new(0.2, 0.2, 1.0), 0.18)),
-            Box::new(Sphere::new(Point3::new(2.0, 1.0, -4.0), 1.5, Color::new(1.0, 0.2, 0.2), 0.18)),
+            Box::new(Plane::new(Point3::new(0.0, -2.0, 0.0), Vector3::new(0.0, 1.0, 0.0), Material { color: Color::new(0.2, 0.2, 0.2), albedo: 0.18 })),
+            Box::new(Sphere::new(Point3::new(0.0, 0.0, -5.0), 1.0, Material { color: Color::new(0.2, 1.0, 0.2), albedo: 0.18 })),
+            Box::new(Sphere::new(Point3::new(-3.0, 1.0, -6.0), 2.0, Material { color: Color::new(0.2, 0.2, 1.0), albedo: 0.18 })),
+            Box::new(Sphere::new(Point3::new(2.0, 1.0, -4.0), 1.5, Material { color: Color::new(1.0, 0.2, 0.2), albedo: 0.18 })),
         ],
         light: DirectionalLight {
             direction: Vector3::new(-0.3, -1.0, -0.4).normalize(),

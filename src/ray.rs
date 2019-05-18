@@ -1,7 +1,9 @@
 
-use cgmath::{Point3, Vector3, InnerSpace};
 use std::cmp::Ordering;
-use crate::color::Color;
+
+use cgmath::{Point3, Vector3, InnerSpace};
+
+use crate::material::Material;
 
 /// Represents a single ray with origin and direction
 pub struct Ray {
@@ -39,30 +41,29 @@ impl Ray {
     }
 }
 
-pub struct Hit {
+pub struct Hit<'a> {
     pub point: Point3<f32>,
     pub distance: f32,
     pub normal: Vector3<f32>,
-    pub color: Color,
-    pub albedo: f32,
+    pub material: &'a Material,
 }
 
-impl PartialEq for Hit {
+impl<'a> PartialEq for Hit<'a> {
     /// Hits are equal when their hit distances are equal
     fn eq(&self, other: &Self) -> bool {
         self.distance == other.distance
     }
 }
 
-impl Eq for Hit {}
+impl<'a> Eq for Hit<'a> {}
 
-impl PartialOrd for Hit {
+impl<'a> PartialOrd for Hit<'a> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl Ord for Hit {
+impl<'a> Ord for Hit<'a> {
     /// Compare hits by their hit distance
     fn cmp(&self, other: &Self) -> Ordering {
         // Hit distances should never be NaN or Infinity
@@ -70,9 +71,9 @@ impl Ord for Hit {
     }
 }
 
-impl Hit {
-    pub fn new(point: Point3<f32>, distance: f32, normal: Vector3<f32>, color: Color, albedo: f32) -> Hit {
-        Hit { point, distance, normal, color, albedo }
+impl<'a> Hit<'a> {
+    pub fn new(point: Point3<f32>, distance: f32, normal: Vector3<f32>, material: &Material) -> Hit {
+        Hit { point, distance, normal, material }
     }
 }
 

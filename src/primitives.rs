@@ -1,15 +1,14 @@
 
 use cgmath::{Point3, InnerSpace, Vector3};
 
-use crate::color::Color;
+use crate::material::Material;
 use crate::ray::{Ray, Hit, Intersectable};
 
 /// A plane
 pub struct Plane {
     pub p0: Point3<f32>,
     pub normal: Vector3<f32>,
-    pub color: Color,
-    pub albedo: f32,
+    pub material: Material,
 }
 
 impl Intersectable for Plane {
@@ -24,7 +23,7 @@ impl Intersectable for Plane {
             let distance = to_p0.dot(normal) / denominator;
             if distance > 0.0 {
                 let hit_point = ray.origin + distance * ray.direction;
-                return Some(Hit::new(hit_point, distance, self.normal, self.color, self.albedo))
+                return Some(Hit::new(hit_point, distance, self.normal, &self.material))
             }
         }
 
@@ -33,8 +32,8 @@ impl Intersectable for Plane {
 }
 
 impl Plane {
-    pub fn new(p0: Point3<f32>, normal: Vector3<f32>, color: Color, albedo: f32) -> Plane {
-        Plane { p0, normal, color, albedo }
+    pub fn new(p0: Point3<f32>, normal: Vector3<f32>, material: Material) -> Plane {
+        Plane { p0, normal, material }
     }
 }
 
@@ -42,8 +41,7 @@ impl Plane {
 pub struct Sphere {
     pub center: Point3<f32>,
     pub radius: f32,
-    pub color: Color,
-    pub albedo: f32,
+    pub material: Material,
 }
 
 impl Intersectable for Sphere {
@@ -88,13 +86,13 @@ impl Intersectable for Sphere {
         let hit_point = ray.origin + distance * ray.direction;
         let normal = (hit_point - self.center).normalize();
 
-        Some(Hit::new(hit_point, distance, normal, self.color, self.albedo))
+        Some(Hit::new(hit_point, distance, normal, &self.material))
     }
 }
 
 impl Sphere {
     /// Construct a sphere
-    pub fn new(center: Point3<f32>, radius: f32, color: Color, albedo: f32) -> Sphere {
-        Sphere { center, radius, color, albedo }
+    pub fn new(center: Point3<f32>, radius: f32, material: Material) -> Sphere {
+        Sphere { center, radius, material }
     }
 }
