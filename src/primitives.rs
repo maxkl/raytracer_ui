@@ -23,7 +23,8 @@ impl Intersectable for Plane {
             let to_p0 = self.p0 - ray.origin;
             let distance = to_p0.dot(normal) / denominator;
             if distance > 0.0 {
-                return Some(Hit::new(distance, self.normal, self.color, self.albedo))
+                let hit_point = ray.origin + distance * ray.direction;
+                return Some(Hit::new(hit_point, distance, self.normal, self.color, self.albedo))
             }
         }
 
@@ -87,7 +88,7 @@ impl Intersectable for Sphere {
         let hit_point = ray.origin + distance * ray.direction;
         let normal = (hit_point - self.center).normalize();
 
-        Some(Hit::new(distance, normal, self.color, self.albedo))
+        Some(Hit::new(hit_point, distance, normal, self.color, self.albedo))
     }
 }
 

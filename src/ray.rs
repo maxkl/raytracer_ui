@@ -40,6 +40,7 @@ impl Ray {
 }
 
 pub struct Hit {
+    pub point: Point3<f32>,
     pub distance: f32,
     pub normal: Vector3<f32>,
     pub color: Color,
@@ -70,8 +71,8 @@ impl Ord for Hit {
 }
 
 impl Hit {
-    pub fn new(distance: f32, normal: Vector3<f32>, color: Color, albedo: f32) -> Hit {
-        Hit { distance, normal, color, albedo }
+    pub fn new(point: Point3<f32>, distance: f32, normal: Vector3<f32>, color: Color, albedo: f32) -> Hit {
+        Hit { point, distance, normal, color, albedo }
     }
 }
 

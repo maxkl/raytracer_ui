@@ -35,12 +35,21 @@ fn render_scene(scene: &Scene) -> DynamicImage {
             let color = if let Some(hit) = hit {
                 // Vector that points towards the light
                 let to_light = -scene.light.direction;
-                // Calculate color using Lambert's Cosine Law
-                let light_power = hit.normal.dot(to_light).max(0.0) * scene.light.intensity;
-                let reflection_factor = hit.albedo / f32::consts::PI;
-                let color = hit.color * scene.light.color * light_power * reflection_factor;
-                // Ensure that color components are between 0.0 and 1.0
-                color.clamp()
+
+                // Cast ray towards the light to check whether the point lies in the shadow
+                let shadow_ray = Ray { origin: hit.point, direction: to_light };
+                let in_light = scene.trace(&shadow_ray).is_none();
+
+                if in_light {
+                    // Calculate color using Lambert's Cosine Law
+                    let light_power = hit.normal.dot(to_light).max(0.0) * scene.light.intensity;
+                    let reflection_factor = hit.albedo / f32::consts::PI;
+                    let color = hit.color * scene.light.color * light_power * reflection_factor;
+                    // Ensure that color components are between 0.0 and 1.0
+                    color.clamp()
+                } else {
+                    Color::black()
+                }
             } else {
                 scene.clear_color
             };
