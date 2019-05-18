@@ -1,8 +1,40 @@
 
-use cgmath::{Point3, InnerSpace};
+use cgmath::{Point3, InnerSpace, Vector3};
 
 use crate::color::Color;
 use crate::ray::{Ray, Hit, Intersectable};
+
+/// A plane
+pub struct Plane {
+    pub p0: Point3<f32>,
+    pub normal: Vector3<f32>,
+    pub color: Color,
+}
+
+impl Intersectable for Plane {
+    fn intersect(&self, ray: &Ray) -> Option<Hit> {
+        // The normal has to be inverted for this calculation
+        let normal = -self.normal;
+
+        // Calculate intersection
+        let denominator = normal.dot(ray.direction);
+        if denominator > 0.0 {
+            let to_p0 = self.p0 - ray.origin;
+            let distance = to_p0.dot(normal) / denominator;
+            if distance > 0.0 {
+                return Some(Hit::new(distance, self.color))
+            }
+        }
+
+        None
+    }
+}
+
+impl Plane {
+    pub fn new(p0: Point3<f32>, normal: Vector3<f32>, color: Color) -> Plane {
+        Plane { p0, normal, color }
+    }
+}
 
 /// A sphere
 pub struct Sphere {

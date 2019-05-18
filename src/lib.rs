@@ -8,11 +8,11 @@ use std::io::ErrorKind;
 use std::time::Instant;
 
 use image::{DynamicImage, GenericImage, GenericImageView, Pixel};
-use cgmath::Point3;
+use cgmath::{Vector3, Point3};
 
 use crate::color::Color;
 use crate::ray::Ray;
-use crate::primitives::Sphere;
+use crate::primitives::{Sphere, Plane};
 use crate::scene::Scene;
 
 /// Render the scene to a new image
@@ -43,6 +43,7 @@ pub fn main(output_file_name: &str) -> i32 {
     let scene = Scene {
         clear_color: Color::new(0.6, 0.8, 1.0),
         objects: vec![
+            Box::new(Plane::new(Point3::new(0.0, -2.0, 0.0), Vector3::new(0.0, 1.0, 0.0), Color::new(0.2, 0.2, 0.2))),
             Box::new(Sphere::new(Point3::new(0.0, 0.0, -5.0), 1.0, Color::new(0.2, 1.0, 0.2))),
             Box::new(Sphere::new(Point3::new(-3.0, 1.0, -6.0), 2.0, Color::new(0.2, 0.2, 1.0))),
             Box::new(Sphere::new(Point3::new(2.0, 1.0, -4.0), 1.5, Color::new(1.0, 0.2, 0.2))),
