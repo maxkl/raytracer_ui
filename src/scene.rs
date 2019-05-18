@@ -6,7 +6,7 @@ use crate::ray::{Ray, Hit, Intersectable};
 pub struct Scene {
     /// Background color, assigned to pixels that are not covered by any object in the scene
     pub clear_color: Color,
-    pub objects: Vec<Box<Intersectable>>,
+    pub objects: Vec<Box<dyn Intersectable>>,
 }
 
 impl Scene {
