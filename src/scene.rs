@@ -1,12 +1,14 @@
 
 use crate::color::Color;
 use crate::ray::{Ray, Hit, Intersectable};
+use crate::lights::DirectionalLight;
 
 /// Holds all information about the scene
 pub struct Scene {
     /// Background color, assigned to pixels that are not covered by any object in the scene
     pub clear_color: Color,
     pub objects: Vec<Box<dyn Intersectable>>,
+    pub light: DirectionalLight,
 }
 
 impl Scene {

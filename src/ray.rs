@@ -41,7 +41,9 @@ impl Ray {
 
 pub struct Hit {
     pub distance: f32,
+    pub normal: Vector3<f32>,
     pub color: Color,
+    pub albedo: f32,
 }
 
 impl PartialEq for Hit {
@@ -68,8 +70,8 @@ impl Ord for Hit {
 }
 
 impl Hit {
-    pub fn new(distance: f32, color: Color) -> Hit {
-        Hit { distance, color }
+    pub fn new(distance: f32, normal: Vector3<f32>, color: Color, albedo: f32) -> Hit {
+        Hit { distance, normal, color, albedo }
     }
 }
 

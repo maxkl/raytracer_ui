@@ -9,6 +9,7 @@ pub struct Plane {
     pub p0: Point3<f32>,
     pub normal: Vector3<f32>,
     pub color: Color,
+    pub albedo: f32,
 }
 
 impl Intersectable for Plane {
@@ -22,7 +23,7 @@ impl Intersectable for Plane {
             let to_p0 = self.p0 - ray.origin;
             let distance = to_p0.dot(normal) / denominator;
             if distance > 0.0 {
-                return Some(Hit::new(distance, self.color))
+                return Some(Hit::new(distance, self.normal, self.color, self.albedo))
             }
         }
 
@@ -31,8 +32,8 @@ impl Intersectable for Plane {
 }
 
 impl Plane {
-    pub fn new(p0: Point3<f32>, normal: Vector3<f32>, color: Color) -> Plane {
-        Plane { p0, normal, color }
+    pub fn new(p0: Point3<f32>, normal: Vector3<f32>, color: Color, albedo: f32) -> Plane {
+        Plane { p0, normal, color, albedo }
     }
 }
 
@@ -41,6 +42,7 @@ pub struct Sphere {
     pub center: Point3<f32>,
     pub radius: f32,
     pub color: Color,
+    pub albedo: f32,
 }
 
 impl Intersectable for Sphere {
@@ -82,13 +84,16 @@ impl Intersectable for Sphere {
         // Choose the intersection point that is closer to the ray origin
         let distance = if t0 < t1 { t0 } else { t1 };
 
-        Some(Hit::new(distance, self.color))
+        let hit_point = ray.origin + distance * ray.direction;
+        let normal = (hit_point - self.center).normalize();
+
+        Some(Hit::new(distance, normal, self.color, self.albedo))
     }
 }
 
 impl Sphere {
     /// Construct a sphere
-    pub fn new(center: Point3<f32>, radius: f32, color: Color) -> Sphere {
-        Sphere { center, radius, color }
+    pub fn new(center: Point3<f32>, radius: f32, color: Color, albedo: f32) -> Sphere {
+        Sphere { center, radius, color, albedo }
     }
 }

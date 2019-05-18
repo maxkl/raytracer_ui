@@ -1,5 +1,6 @@
 
 use image::Rgb;
+use std::ops::Mul;
 
 /// Represents RGB colors
 #[derive(Copy, Clone)]
@@ -7,6 +8,38 @@ pub struct Color {
     pub r: f32,
     pub g: f32,
     pub b: f32,
+}
+
+impl Mul for Color {
+    type Output = Color;
+
+    fn mul(self, rhs: Color) -> Color {
+        Color {
+            r: self.r * rhs.r,
+            g: self.g * rhs.g,
+            b: self.b * rhs.b,
+        }
+    }
+}
+
+impl Mul<f32> for Color {
+    type Output = Color;
+
+    fn mul(self, rhs: f32) -> Color {
+        Color {
+            r: self.r * rhs,
+            g: self.g * rhs,
+            b: self.b * rhs,
+        }
+    }
+}
+
+impl Mul<Color> for f32 {
+    type Output = Color;
+
+    fn mul(self, rhs: Color) -> Color {
+        rhs * self
+    }
 }
 
 impl Color {
@@ -18,6 +51,14 @@ impl Color {
     /// Construct a Color struct with all components set to 0.0
     pub fn black() -> Color {
         Color::new(0.0, 0.0, 0.0)
+    }
+
+    pub fn clamp(&self) -> Color {
+        Color {
+            r: self.r.min(1.0).max(0.0),
+            g: self.g.min(1.0).max(0.0),
+            b: self.b.min(1.0).max(0.0),
+        }
     }
 
     /// Convert to 8-bit Rgb struct from `image` crate
