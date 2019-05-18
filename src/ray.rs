@@ -72,3 +72,9 @@ impl Hit {
         Hit { distance, color }
     }
 }
+
+/// Implement for objects that a ray can intersect with
+pub trait Intersectable {
+    /// Cast a ray at the object. Returns true if it hits
+    fn intersect(&self, ray: &Ray) -> Option<Hit>;
+}

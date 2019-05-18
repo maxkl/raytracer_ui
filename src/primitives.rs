@@ -2,13 +2,7 @@
 use cgmath::{Point3, InnerSpace};
 
 use crate::color::Color;
-use crate::ray::{Ray, Hit};
-
-/// Implement for objects that a ray can intersect with
-pub trait Intersectable {
-    /// Cast a ray at the object. Returns true if it hits
-    fn intersect(&self, ray: &Ray) -> Option<Hit>;
-}
+use crate::ray::{Ray, Hit, Intersectable};
 
 /// A sphere
 pub struct Sphere {

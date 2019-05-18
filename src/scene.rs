@@ -1,7 +1,6 @@
 
 use crate::color::Color;
-use crate::ray::{Ray, Hit};
-use crate::primitives::Intersectable;
+use crate::ray::{Ray, Hit, Intersectable};
 
 /// Holds all information about the scene
 pub struct Scene {
