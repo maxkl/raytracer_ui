@@ -30,7 +30,7 @@ fn render_scene(scene: &Scene) -> DynamicImage {
     for y in 0..h {
         for x in 0..w {
             // Construct ray
-            let ray = Ray::from_screen_coordinates(x, y, w, h, 90.0);
+            let ray = Ray::from_screen_coordinates(x, y, w, h, 45.0);
             // Calculate intersection
             let hit = scene.trace(&ray);
             // Assign appropriate color
@@ -69,9 +69,9 @@ pub fn main(output_file_name: &str) -> i32 {
         clear_color: Color::new(0.6, 0.8, 1.0),
         objects: vec![
             Box::new(Plane::new(Point3::new(0.0, -2.0, 0.0), Vector3::new(0.0, 1.0, 0.0), Material { color: Color::new(0.2, 0.2, 0.2), albedo: 0.18 })),
-            Box::new(Sphere::new(Point3::new(0.0, 0.0, -5.0), 1.0, Material { color: Color::new(0.2, 1.0, 0.2), albedo: 0.18 })),
-            Box::new(Sphere::new(Point3::new(-3.0, 1.0, -6.0), 2.0, Material { color: Color::new(0.2, 0.2, 1.0), albedo: 0.18 })),
-            Box::new(Sphere::new(Point3::new(2.0, 1.0, -4.0), 1.5, Material { color: Color::new(1.0, 0.2, 0.2), albedo: 0.18 })),
+            Box::new(Sphere::new(Point3::new(0.0, 0.0, -9.0), 1.0, Material { color: Color::new(0.2, 1.0, 0.2), albedo: 0.18 })),
+            Box::new(Sphere::new(Point3::new(-3.0, 1.0, -10.0), 2.0, Material { color: Color::new(0.2, 0.2, 1.0), albedo: 0.18 })),
+            Box::new(Sphere::new(Point3::new(2.5, 1.5, -8.0), 1.5, Material { color: Color::new(1.0, 0.2, 0.2), albedo: 0.18 })),
         ],
         light: DirectionalLight {
             direction: Vector3::new(-0.3, -1.0, -0.4).normalize(),
