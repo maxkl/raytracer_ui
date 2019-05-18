@@ -14,6 +14,7 @@ fn wrapped_main() -> i32 {
 
     let output_file_name = &args[1];
 
+    // Call into lib.rs
     raytracer::main(output_file_name)
 }
 
