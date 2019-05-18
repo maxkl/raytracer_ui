@@ -1,5 +1,7 @@
 
 use cgmath::{Point3, Vector3, InnerSpace};
+use std::cmp::Ordering;
+use crate::color::Color;
 
 /// Represents a single ray with origin and direction
 pub struct Ray {
@@ -34,5 +36,39 @@ impl Ray {
             origin: Point3::new(0.0, 0.0, 0.0),
             direction: direction_normalized,
         }
+    }
+}
+
+pub struct Hit {
+    pub distance: f32,
+    pub color: Color,
+}
+
+impl PartialEq for Hit {
+    /// Hits are equal when their hit distances are equal
+    fn eq(&self, other: &Self) -> bool {
+        self.distance == other.distance
+    }
+}
+
+impl Eq for Hit {}
+
+impl PartialOrd for Hit {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Hit {
+    /// Compare hits by their hit distance
+    fn cmp(&self, other: &Self) -> Ordering {
+        // Hit distances should never be NaN or Infinity
+        self.distance.partial_cmp(&other.distance).unwrap()
+    }
+}
+
+impl Hit {
+    pub fn new(distance: f32, color: Color) -> Hit {
+        Hit { distance, color }
     }
 }
