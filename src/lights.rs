@@ -24,6 +24,7 @@ pub struct DirectionalLight {
 
 #[typetag::serde]
 impl Light for DirectionalLight {
+    #[allow(unused_variables)]
     fn direction_from(&self, point: &Point3<f32>) -> Vector3<f32> {
         -self.direction
     }
@@ -32,10 +33,12 @@ impl Light for DirectionalLight {
         self.color
     }
 
+    #[allow(unused_variables)]
     fn intensity_at(&self, point: &Point3<f32>) -> f32 {
         self.intensity
     }
 
+    #[allow(unused_variables)]
     fn distance_at(&self, point: &Point3<f32>) -> f32 {
         f32::INFINITY
     }
