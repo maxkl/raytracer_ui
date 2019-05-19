@@ -1,16 +1,19 @@
 
 use cgmath::{Point3, InnerSpace, Vector3};
+use serde::{Serialize, Deserialize};
 
 use crate::material::Material;
 use crate::ray::{Ray, Hit, Intersectable};
 
 /// A plane
+#[derive(Serialize, Deserialize)]
 pub struct Plane {
     pub p0: Point3<f32>,
     pub normal: Vector3<f32>,
     pub material: Material,
 }
 
+#[typetag::serde]
 impl Intersectable for Plane {
     fn intersect(&self, ray: &Ray) -> Option<Hit> {
         // The normal has to be inverted for this calculation
@@ -38,12 +41,14 @@ impl Plane {
 }
 
 /// A sphere
+#[derive(Serialize, Deserialize)]
 pub struct Sphere {
     pub center: Point3<f32>,
     pub radius: f32,
     pub material: Material,
 }
 
+#[typetag::serde]
 impl Intersectable for Sphere {
     fn intersect(&self, ray: &Ray) -> Option<Hit> {
         // Calculate vector from ray origin to sphere center (hypotenuse)

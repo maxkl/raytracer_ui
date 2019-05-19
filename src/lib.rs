@@ -9,6 +9,8 @@ mod scene;
 use std::io::ErrorKind;
 use std::time::Instant;
 use std::f32;
+use std::fs;
+use std::error::Error;
 
 use image::{DynamicImage, GenericImage, GenericImageView, Pixel};
 use cgmath::{Vector3, Point3, InnerSpace};
@@ -63,22 +65,21 @@ fn render_scene(scene: &Scene) -> DynamicImage {
     img
 }
 
+/// Load a scene from a scene definition file in RON format
+fn load_scene(scene_file_name: &str) -> Result<Scene, Box<dyn Error>> {
+    // Load file as string
+    let source = fs::read_to_string(scene_file_name)?;
+
+    // Deserialize scene from string
+    let scene = ron::de::from_str(&source)?;
+
+    Ok(scene)
+}
+
 /// Render the scene and store the resulting image at `output_file_name`
-pub fn main(output_file_name: &str) -> i32 {
-    let scene = Scene {
-        clear_color: Color::new(0.6, 0.8, 1.0),
-        objects: vec![
-            Box::new(Plane::new(Point3::new(0.0, -2.0, 0.0), Vector3::new(0.0, 1.0, 0.0), Material { color: Color::new(0.2, 0.2, 0.2), albedo: 0.18 })),
-            Box::new(Sphere::new(Point3::new(0.0, 0.0, -9.0), 1.0, Material { color: Color::new(0.2, 1.0, 0.2), albedo: 0.18 })),
-            Box::new(Sphere::new(Point3::new(-3.0, 1.0, -10.0), 2.0, Material { color: Color::new(0.2, 0.2, 1.0), albedo: 0.18 })),
-            Box::new(Sphere::new(Point3::new(2.5, 1.5, -8.0), 1.5, Material { color: Color::new(1.0, 0.2, 0.2), albedo: 0.18 })),
-        ],
-        light: DirectionalLight {
-            direction: Vector3::new(-0.3, -1.0, -0.4).normalize(),
-            color: Color::new(1.0, 1.0, 1.0),
-            intensity: 20.0,
-        },
-    };
+pub fn main(scene_file_name: &str, output_file_name: &str) -> i32 {
+    // Load scene from scene definition file
+    let scene = load_scene(scene_file_name).unwrap();
 
     let now = Instant::now();
 

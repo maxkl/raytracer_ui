@@ -78,6 +78,7 @@ impl<'a> Hit<'a> {
 }
 
 /// Implement for objects that a ray can intersect with
+#[typetag::serde(tag = "type")]
 pub trait Intersectable {
     /// Cast a ray at the object. Returns true if it hits
     fn intersect(&self, ray: &Ray) -> Option<Hit>;

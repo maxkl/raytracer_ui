@@ -1,9 +1,11 @@
 
-use image::Rgb;
 use std::ops::Mul;
 
+use image::Rgb;
+use serde::{Serialize, Deserialize};
+
 /// Represents RGB colors
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Serialize, Deserialize)]
 pub struct Color {
     pub r: f32,
     pub g: f32,

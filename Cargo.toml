@@ -6,4 +6,7 @@ edition = "2018"
 
 [dependencies]
 image = "0.21.1"
-cgmath = "0.17.0"
+cgmath = { version = "0.17.0", features = ["serde"] }
+serde = { version = "1.0.91", features = ["derive"] }
+typetag = "0.1.2"
+ron = "0.5.1"

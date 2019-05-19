@@ -1,9 +1,12 @@
 
+use serde::{Serialize, Deserialize};
+
 use crate::color::Color;
 use crate::ray::{Ray, Hit, Intersectable};
 use crate::lights::DirectionalLight;
 
 /// Holds all information about the scene
+#[derive(Serialize, Deserialize)]
 pub struct Scene {
     /// Background color, assigned to pixels that are not covered by any object in the scene
     pub clear_color: Color,
