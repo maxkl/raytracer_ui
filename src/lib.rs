@@ -16,8 +16,32 @@ use image::{DynamicImage, GenericImage, GenericImageView, Pixel};
 use cgmath::InnerSpace;
 
 use crate::color::Color;
-use crate::ray::Ray;
+use crate::ray::{Ray, Hit};
 use crate::scene::Scene;
+
+fn calculate_lighting(scene: &Scene, hit: &Hit) -> Color {
+    let mut color = Color::black();
+
+    // Sum contributions by all light sources
+    for light in scene.lights.iter() {
+        // Vector that points towards the light
+        let to_light = light.direction_from(&hit.point);
+
+        // Cast ray towards the light to check whether the point lies in the shadow
+        let shadow_ray = Ray { origin: hit.point, direction: to_light };
+        let in_light = scene.trace(&shadow_ray).is_none();
+
+        if in_light {
+            // Calculate color using Lambert's Cosine Law
+            let light_power = hit.normal.dot(to_light).max(0.0) * light.intensity_at(&hit.point);
+            let reflection_factor = hit.material.albedo / f32::consts::PI;
+            color += hit.material.color * light.color() * light_power * reflection_factor;
+        }
+    }
+
+    // Ensure that color components are between 0.0 and 1.0
+    color.clamp()
+}
 
 /// Render the scene to a new image
 fn render_scene(scene: &Scene) -> DynamicImage {
@@ -33,26 +57,9 @@ fn render_scene(scene: &Scene) -> DynamicImage {
             // Calculate intersection
             let hit = scene.trace(&ray);
             // Assign appropriate color
-            let color = if let Some(hit) = hit {
-                // Vector that points towards the light
-                let to_light = -scene.light.direction;
-
-                // Cast ray towards the light to check whether the point lies in the shadow
-                let shadow_ray = Ray { origin: hit.point, direction: to_light };
-                let in_light = scene.trace(&shadow_ray).is_none();
-
-                if in_light {
-                    // Calculate color using Lambert's Cosine Law
-                    let light_power = hit.normal.dot(to_light).max(0.0) * scene.light.intensity;
-                    let reflection_factor = hit.material.albedo / f32::consts::PI;
-                    let color = hit.material.color * scene.light.color * light_power * reflection_factor;
-                    // Ensure that color components are between 0.0 and 1.0
-                    color.clamp()
-                } else {
-                    Color::black()
-                }
-            } else {
-                scene.clear_color
+            let color = match hit {
+                Some(hit) => calculate_lighting(&scene, &hit),
+                None => scene.clear_color,
             };
             // Assign pixel value
             img.put_pixel(x, y, color.to_image_color().to_rgba());

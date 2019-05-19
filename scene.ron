@@ -38,9 +38,24 @@ Scene(
             ),
         },
     ],
-    light: (
-        direction: (x: -0.26832816, y: -0.8944272, z: -0.3577709),
-        color: (r: 1, g: 1, b: 1),
-        intensity: 20,
-    ),
+    lights: [
+        {
+            "type": "DirectionalLight",
+            "direction": (x: -0.26832816, y: -0.8944272, z: -0.3577709),
+            "color": (r: 1, g: 0, b: 0),
+            "intensity": 10,
+        },
+        {
+            "type": "DirectionalLight",
+            "direction": (x: 0.26832816, y: -0.8944272, z: -0.3577709),
+            "color": (r: 0, g: 1, b: 0),
+            "intensity": 10,
+        },
+        {
+            "type": "DirectionalLight",
+            "direction": (x: 0.26832816, y: -0.8944272, z: 0.3577709),
+            "color": (r: 0, g: 0, b: 1),
+            "intensity": 10,
+        },
+    ],
 )

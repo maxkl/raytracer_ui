@@ -3,7 +3,7 @@ use serde::{Serialize, Deserialize};
 
 use crate::color::Color;
 use crate::ray::{Ray, Hit, Intersectable};
-use crate::lights::DirectionalLight;
+use crate::lights::Light;
 
 /// Holds all information about the scene
 #[derive(Serialize, Deserialize)]
@@ -11,7 +11,7 @@ pub struct Scene {
     /// Background color, assigned to pixels that are not covered by any object in the scene
     pub clear_color: Color,
     pub objects: Vec<Box<dyn Intersectable>>,
-    pub light: DirectionalLight,
+    pub lights: Vec<Box<dyn Light>>,
 }
 
 impl Scene {
