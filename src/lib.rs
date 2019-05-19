@@ -20,7 +20,7 @@ use crate::ray::{Ray, Hit};
 use crate::scene::Scene;
 
 fn calculate_lighting(scene: &Scene, hit: &Hit) -> Color {
-    let mut color = Color::black();
+    let mut color = scene.ambient_light_color;
 
     // Sum contributions by all light sources
     for light in scene.lights.iter() {

@@ -38,6 +38,7 @@ Scene(
             ),
         },
     ],
+    ambient_light_color: (r: 0.05, g: 0.05, b: 0.05),
     lights: [
         {
             "type": "DirectionalLight",

@@ -11,6 +11,7 @@ pub struct Scene {
     /// Background color, assigned to pixels that are not covered by any object in the scene
     pub clear_color: Color,
     pub objects: Vec<Box<dyn Intersectable>>,
+    pub ambient_light_color: Color,
     pub lights: Vec<Box<dyn Light>>,
 }
 
