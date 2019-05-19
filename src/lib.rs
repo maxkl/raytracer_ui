@@ -13,13 +13,10 @@ use std::fs;
 use std::error::Error;
 
 use image::{DynamicImage, GenericImage, GenericImageView, Pixel};
-use cgmath::{Vector3, Point3, InnerSpace};
+use cgmath::InnerSpace;
 
 use crate::color::Color;
-use crate::material::Material;
 use crate::ray::Ray;
-use crate::primitives::{Sphere, Plane};
-use crate::lights::DirectionalLight;
 use crate::scene::Scene;
 
 /// Render the scene to a new image

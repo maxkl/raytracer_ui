@@ -34,12 +34,6 @@ impl Intersectable for Plane {
     }
 }
 
-impl Plane {
-    pub fn new(p0: Point3<f32>, normal: Vector3<f32>, material: Material) -> Plane {
-        Plane { p0, normal, material }
-    }
-}
-
 /// A sphere
 #[derive(Serialize, Deserialize)]
 pub struct Sphere {
@@ -92,12 +86,5 @@ impl Intersectable for Sphere {
         let normal = (hit_point - self.center).normalize();
 
         Some(Hit::new(hit_point, distance, normal, &self.material))
-    }
-}
-
-impl Sphere {
-    /// Construct a sphere
-    pub fn new(center: Point3<f32>, radius: f32, material: Material) -> Sphere {
-        Sphere { center, radius, material }
     }
 }
