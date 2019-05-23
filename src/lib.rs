@@ -29,7 +29,12 @@ fn calculate_lighting(scene: &Scene, hit: &Hit) -> Color {
 
         // Cast ray towards the light to check whether the point lies in the shadow
         let shadow_ray = Ray { origin: hit.point, direction: to_light };
-        let in_light = scene.trace(&shadow_ray).is_none();
+        let shadow_hit = scene.trace(&shadow_ray);
+        // Is there any object in the direction of the light that is closer than the light source?
+        let in_light = match shadow_hit {
+            Some(shadow_hit) => shadow_hit.distance > light.distance_at(&hit.point),
+            None => true,
+        };
 
         if in_light {
             // Calculate color using Lambert's Cosine Law
