@@ -3,7 +3,7 @@ use std::cmp::Ordering;
 
 use cgmath::{Point3, Vector3, InnerSpace};
 
-use crate::material::Material;
+use crate::material::{Material, TexCoords};
 
 /// Represents a single ray with origin and direction
 pub struct Ray {
@@ -46,6 +46,7 @@ pub struct Hit<'a> {
     pub distance: f32,
     pub normal: Vector3<f32>,
     pub material: &'a Material,
+    pub tex_coords: TexCoords<f32>,
 }
 
 impl<'a> PartialEq for Hit<'a> {
@@ -72,8 +73,8 @@ impl<'a> Ord for Hit<'a> {
 }
 
 impl<'a> Hit<'a> {
-    pub fn new(point: Point3<f32>, distance: f32, normal: Vector3<f32>, material: &Material) -> Hit {
-        Hit { point, distance, normal, material }
+    pub fn new(point: Point3<f32>, distance: f32, normal: Vector3<f32>, material: &Material, tex_coords: TexCoords<f32>) -> Hit {
+        Hit { point, distance, normal, material, tex_coords }
     }
 }
 

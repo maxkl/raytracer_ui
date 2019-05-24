@@ -1,8 +1,10 @@
 
+use std::f32;
+
 use cgmath::{Point3, InnerSpace, Vector3};
 use serde::{Serialize, Deserialize};
 
-use crate::material::Material;
+use crate::material::{Material, TexCoords};
 use crate::ray::{Ray, Hit, Intersectable};
 use crate::math_util::deserialize_normalized;
 
@@ -28,7 +30,25 @@ impl Intersectable for Plane {
             let distance = to_p0.dot(normal) / denominator;
             if distance > 0.0 {
                 let hit_point = ray.origin + distance * ray.direction;
-                return Some(Hit::new(hit_point, distance, self.normal, &self.material))
+
+                // Calculate two perpendicular axes (unit vectors) that lie on the plane
+                let x_axis = if self.normal != Vector3::unit_z() {
+                    self.normal.cross(Vector3::unit_z())
+                } else {
+                    self.normal.cross(Vector3::unit_y())
+                };
+                let y_axis = self.normal.cross(x_axis);
+
+                // Vector from plane origin to hit point
+                let hit_vec = hit_point - self.p0;
+
+                // Project onto the two plane axes to get the UV coordinates
+                let tex_coords = TexCoords {
+                    u: hit_vec.dot(x_axis),
+                    v: hit_vec.dot(y_axis),
+                };
+
+                return Some(Hit::new(hit_point, distance, self.normal, &self.material, tex_coords))
             }
         }
 
@@ -87,6 +107,18 @@ impl Intersectable for Sphere {
         let hit_point = ray.origin + distance * ray.direction;
         let normal = (hit_point - self.center).normalize();
 
-        Some(Hit::new(hit_point, distance, normal, &self.material))
+        // Vector from sphere origin to hit point
+        let hit_vec = hit_point - self.center;
+
+        // Calculate UV coordinates from spherical coordinates
+        let tex_x = (1.0 + hit_vec.z.atan2(hit_vec.x) / f32::consts::PI) * 0.5;
+        let tex_y = (hit_vec.y / self.radius).acos() / f32::consts::PI;
+
+        let tex_coords = TexCoords {
+            u: tex_x,
+            v: tex_y,
+        };
+
+        Some(Hit::new(hit_point, distance, normal, &self.material, tex_coords))
     }
 }

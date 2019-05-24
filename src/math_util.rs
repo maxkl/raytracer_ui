@@ -22,3 +22,15 @@ pub fn deserialize_normalized<'de, T, D>(deserializer: D) -> Result<T, D::Error>
 {
     Ok(T::deserialize(deserializer)?.normalize())
 }
+
+/// The mathematically correct modulo operation
+pub trait Modulo<RHS=Self> {
+    /// Calculate `self mod rhs`
+    fn modulo(&self, rhs: RHS) -> Self;
+}
+
+impl Modulo for f32 {
+    fn modulo(&self, rhs: f32) -> f32 {
+        ((self % rhs) + rhs) % rhs
+    }
+}

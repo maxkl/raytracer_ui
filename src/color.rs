@@ -58,6 +58,14 @@ impl Color {
         Color { r, g, b }
     }
 
+    pub fn from_rgb(rgb: Rgb<u8>) -> Color {
+        Color {
+            r: rgb.data[0] as f32 / 255.0,
+            g: rgb.data[1] as f32 / 255.0,
+            b: rgb.data[2] as f32 / 255.0,
+        }
+    }
+
     /// Construct a Color struct with all components set to 0.0
     pub fn black() -> Color {
         Color::new(0.0, 0.0, 0.0)

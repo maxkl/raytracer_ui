@@ -41,7 +41,8 @@ fn calculate_lighting(scene: &Scene, hit: &Hit) -> Color {
             // Calculate color using Lambert's Cosine Law
             let light_power = hit.normal.dot(to_light).max(0.0) * light.intensity_at(&hit.point);
             let reflection_factor = hit.material.albedo / f32::consts::PI;
-            color += hit.material.color * light.color() * light_power * reflection_factor;
+            let material_color = hit.material.color.color(&hit.tex_coords);
+            color += material_color * light.color() * light_power * reflection_factor;
         }
     }
 
