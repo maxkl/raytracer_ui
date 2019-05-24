@@ -4,11 +4,13 @@ use serde::{Serialize, Deserialize};
 
 use crate::material::Material;
 use crate::ray::{Ray, Hit, Intersectable};
+use crate::math_util::deserialize_normalized;
 
 /// A plane
 #[derive(Serialize, Deserialize)]
 pub struct Plane {
     pub p0: Point3<f32>,
+    #[serde(deserialize_with = "deserialize_normalized")]
     pub normal: Vector3<f32>,
     pub material: Material,
 }

@@ -5,6 +5,7 @@ use cgmath::{Vector3, Point3, InnerSpace};
 use serde::{Serialize, Deserialize};
 
 use crate::color::Color;
+use crate::math_util::deserialize_normalized;
 
 #[typetag::serde(tag = "type")]
 pub trait Light {
@@ -17,6 +18,7 @@ pub trait Light {
 /// A light that only has a direction, e.g. from the sun
 #[derive(Serialize, Deserialize)]
 pub struct DirectionalLight {
+    #[serde(deserialize_with = "deserialize_normalized")]
     pub direction: Vector3<f32>,
     pub color: Color,
     pub intensity: f32,
