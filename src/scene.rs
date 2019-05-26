@@ -1,4 +1,7 @@
 
+use std::fs;
+use std::error::Error;
+
 use serde::{Serialize, Deserialize};
 
 use crate::color::Color;
@@ -17,6 +20,17 @@ pub struct Scene {
 }
 
 impl Scene {
+    /// Load a scene from a scene definition file in RON format
+    pub fn load(scene_file_name: &str) -> Result<Scene, Box<dyn Error>> {
+        // Load file as string
+        let source = fs::read_to_string(scene_file_name)?;
+
+        // Deserialize scene from string
+        let scene = ron::de::from_str(&source)?;
+
+        Ok(scene)
+    }
+
     /// Check ray intersections against all objects in the scene and return the closest hit
     pub fn trace(&self, ray: &Ray) -> Option<Hit> {
         self.objects.iter()
