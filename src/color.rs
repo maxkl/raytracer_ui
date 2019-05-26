@@ -1,5 +1,5 @@
 
-use std::ops::{Mul, AddAssign};
+use std::ops::{Add, AddAssign, Mul};
 
 use image::Rgb;
 use serde::{Serialize, Deserialize};
@@ -10,6 +10,26 @@ pub struct Color {
     pub r: f32,
     pub g: f32,
     pub b: f32,
+}
+
+impl Add for Color {
+    type Output = Color;
+
+    fn add(self, rhs: Color) -> Color {
+        Color {
+            r: self.r + rhs.r,
+            g: self.g + rhs.g,
+            b: self.b + rhs.b,
+        }
+    }
+}
+
+impl AddAssign for Color {
+    fn add_assign(&mut self, rhs: Color) {
+        self.r += rhs.r;
+        self.g += rhs.g;
+        self.b += rhs.b;
+    }
 }
 
 impl Mul for Color {
@@ -41,14 +61,6 @@ impl Mul<Color> for f32 {
 
     fn mul(self, rhs: Color) -> Color {
         rhs * self
-    }
-}
-
-impl AddAssign for Color {
-    fn add_assign(&mut self, rhs: Color) {
-        self.r += rhs.r;
-        self.g += rhs.g;
-        self.b += rhs.b;
     }
 }
 

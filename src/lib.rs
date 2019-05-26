@@ -20,8 +20,8 @@ use crate::color::Color;
 use crate::ray::{Ray, Hit};
 use crate::scene::Scene;
 
-fn calculate_lighting(scene: &Scene, hit: &Hit) -> Color {
-    let mut color = scene.ambient_light_color;
+fn shade_diffuse(scene: &Scene, hit: &Hit) -> Color {
+    let mut color = Color::black();
 
     // Sum contributions by all light sources
     for light in scene.lights.iter() {
@@ -50,6 +50,29 @@ fn calculate_lighting(scene: &Scene, hit: &Hit) -> Color {
     color.clamp()
 }
 
+fn get_color(scene: &Scene, ray: &Ray, hit: &Hit, depth: u32) -> Color {
+    let diffuse_color = shade_diffuse(scene, hit);
+
+    let reflective_color = if hit.material.reflectivity > 0.0 {
+        let reflection_ray = Ray::create_reflection(&hit.normal, &ray.direction, &hit.point);
+        cast_ray(scene, &reflection_ray, depth + 1)
+    } else {
+        Color::black()
+    };
+
+    (diffuse_color * (1.0 - hit.material.reflectivity) + reflective_color * hit.material.reflectivity + scene.ambient_light_color).clamp()
+}
+
+fn cast_ray(scene: &Scene, ray: &Ray, depth: u32) -> Color {
+    if depth > scene.max_recursion_depth {
+        return Color::black();
+    }
+
+    scene.trace(ray)
+        .map(|hit| get_color(scene, ray, &hit, depth))
+        .unwrap_or(scene.clear_color)
+}
+
 /// Render the scene to a new image
 fn render_scene(scene: &Scene) -> DynamicImage {
     let mut img = DynamicImage::new_rgb8(800, 600);
@@ -61,13 +84,8 @@ fn render_scene(scene: &Scene) -> DynamicImage {
         for x in 0..w {
             // Construct ray
             let ray = Ray::from_screen_coordinates(x, y, w, h, 45.0);
-            // Calculate intersection
-            let hit = scene.trace(&ray);
             // Assign appropriate color
-            let color = match hit {
-                Some(hit) => calculate_lighting(&scene, &hit),
-                None => scene.clear_color,
-            };
+            let color = cast_ray(scene, &ray, 0);
             // Assign pixel value
             img.put_pixel(x, y, color.to_image_color().to_rgba());
         }

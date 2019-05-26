@@ -8,6 +8,7 @@ Scene(
             "material": (
                 color: Texture("assets/textures/checkerboard.png"),
                 albedo: 0.18,
+                reflectivity: 0.3,
             ),
         },
         {
@@ -17,6 +18,7 @@ Scene(
             "material": (
                 color: Color((r: 0.2, g: 1, b: 0.2)),
                 albedo: 0.18,
+                reflectivity: 0.7,
             ),
         },
         {
@@ -26,6 +28,7 @@ Scene(
             "material": (
                 color: Texture("assets/textures/checkerboard.png"),
                 albedo: 0.18,
+                reflectivity: 0,
             ),
         },
         {
@@ -35,6 +38,7 @@ Scene(
             "material": (
                 color: Color((r: 1, g: 0.2, b: 0.2)),
                 albedo: 0.18,
+                reflectivity: 0,
             ),
         },
     ],
@@ -65,4 +69,5 @@ Scene(
             "intensity": 1000,
         },
     ],
+    max_recursion_depth: 5,
 )

@@ -92,4 +92,5 @@ impl Coloration {
 pub struct Material {
     pub color: Coloration,
     pub albedo: f32,
+    pub reflectivity: f32,
 }

@@ -13,6 +13,7 @@ pub struct Scene {
     pub objects: Vec<Box<dyn Intersectable>>,
     pub ambient_light_color: Color,
     pub lights: Vec<Box<dyn Light>>,
+    pub max_recursion_depth: u32,
 }
 
 impl Scene {

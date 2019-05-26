@@ -39,6 +39,13 @@ impl Ray {
             direction: direction_normalized,
         }
     }
+
+    pub fn create_reflection(normal: &Vector3<f32>, incident: &Vector3<f32>, hit_point: &Point3<f32>) -> Ray {
+        Ray {
+            origin: *hit_point,
+            direction: incident - (2.0 * incident.dot(*normal) * normal),
+        }
+    }
 }
 
 pub struct Hit<'a> {
