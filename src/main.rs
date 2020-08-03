@@ -3,8 +3,9 @@ use std::error::Error;
 use std::{env, process, fs, thread};
 use std::time::{Instant, Duration};
 use std::sync::mpsc::{channel, Receiver, Sender, TryRecvError};
+use std::collections::VecDeque;
 
-use image::{DynamicImage, GenericImageView, Pixel};
+use image::{DynamicImage, GenericImageView, Pixel, GenericImage};
 use minifb::{Window, WindowOptions, Key};
 
 use raytracer::{Scene, Renderer};
@@ -23,7 +24,7 @@ pub fn load_scene(scene_file_name: &str) -> Result<Scene, Box<dyn Error>> {
 enum Cmd {
     Load(String),
     Render,
-    Save(String),
+    RenderRect(u32, u32, u32, u32),
 }
 
 struct ImageProperties {
@@ -34,12 +35,11 @@ struct ImageProperties {
 enum CmdResult {
     Loaded(ImageProperties),
     Rendered(DynamicImage),
-    Saved,
+    RenderedRect(DynamicImage, u32, u32),
 }
 
 fn render_thread(rx: Receiver<Cmd>, tx: Sender<CmdResult>) {
     let mut renderer = None;
-    let mut img = None;
 
     loop {
         match rx.recv() {
@@ -66,21 +66,30 @@ fn render_thread(rx: Receiver<Cmd>, tx: Sender<CmdResult>) {
                     let duration = now.elapsed();
                     println!("Rendered scene in {:.3} ms", duration.as_micros() as f64 * 1e-3);
 
-                    img = Some(result.clone());
-
                     tx.send(CmdResult::Rendered(result)).unwrap();
                 }
-                Cmd::Save(output_file_name) => {
-                    let img = img.as_ref().unwrap();
+                Cmd::RenderRect(x, y, w, h) => {
+                    let renderer = renderer.as_ref().unwrap();
 
-                    img.save(&output_file_name).unwrap();
+                    let result = renderer.render_rect(x, y, w, h);
 
-                    tx.send(CmdResult::Saved).unwrap();
+                    tx.send(CmdResult::RenderedRect(result, x, y)).unwrap();
                 }
             }
             Err(_) => break
         }
     }
+}
+
+fn gen_chunks(w: u32, h: u32, chunk_size: u32) -> VecDeque<(u32, u32, u32, u32)> {
+    let mut chunks = VecDeque::new();
+    for y in (0..h).step_by(chunk_size as usize) {
+        for x in (0..w).step_by(chunk_size as usize) {
+            chunks.push_back((x, y, (w - x).min(chunk_size), (h - y).min(chunk_size)));
+        }
+    }
+
+    chunks
 }
 
 fn render_loop(scene_file_name: &str, output_file_name: &str) -> Result<(), Box<dyn Error>> {
@@ -99,6 +108,8 @@ fn render_loop(scene_file_name: &str, output_file_name: &str) -> Result<(), Box<
     let mut image = None;
 
     let mut image_changed = false;
+
+    let mut chunks = VecDeque::new();
 
     tx.send(Cmd::Load(scene_file_name.to_string())).unwrap();
 
@@ -134,13 +145,24 @@ fn render_loop(scene_file_name: &str, output_file_name: &str) -> Result<(), Box<
 
                     window = Some(new_window);
 
-                    tx.send(Cmd::Render).unwrap();
+                    chunks = gen_chunks(image_properties.width, image_properties.height, 100);
+
+                    let chunk = chunks.pop_front().unwrap();
+                    tx.send(Cmd::RenderRect(chunk.0, chunk.1, chunk.2, chunk.3)).unwrap();
                 }
                 CmdResult::Rendered(img) => {
                     image = Some(img);
                     image_changed = true;
                 }
-                CmdResult::Saved => println!("Saved!")
+                CmdResult::RenderedRect(img, x, y) => {
+                    let image = image.as_mut().unwrap();
+                    image.copy_from(&img, x, y).unwrap();
+                    image_changed = true;
+
+                    if let Some(chunk) = chunks.pop_front() {
+                        tx.send(Cmd::RenderRect(chunk.0, chunk.1, chunk.2, chunk.3)).unwrap();
+                    }
+                }
             }
         }
 

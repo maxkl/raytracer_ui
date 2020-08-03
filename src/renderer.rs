@@ -1,7 +1,7 @@
 
 use std::f32;
 
-use image::{DynamicImage, GenericImage, GenericImageView, Pixel};
+use image::{DynamicImage, GenericImage, Pixel};
 use cgmath::{InnerSpace, Vector3};
 
 use crate::color::Color;
@@ -22,19 +22,23 @@ impl Renderer {
     /// Render the scene to a new image
     pub fn render(&self) -> DynamicImage {
         let size = self.scene.image_size;
-        let mut img = DynamicImage::new_rgb8(size.0, size.1);
+        self.render_rect(0, 0, size.0, size.1)
+    }
+
+    pub fn render_rect(&self, x: u32, y: u32, w: u32, h: u32) -> DynamicImage {
+        let full_image_size = self.scene.image_size;
+
+        let mut img = DynamicImage::new_rgb8(w, h);
 
         // Iterate over the entire image pixel by pixel
-        let w = img.width();
-        let h = img.height();
-        for y in 0..h {
-            for x in 0..w {
+        for y_local in 0..h {
+            for x_local in 0..w {
                 // Construct ray
-                let ray = Ray::from_screen_coordinates(x, y, w, h, 45.0);
+                let ray = Ray::from_screen_coordinates(x + x_local, y + y_local, full_image_size.0, full_image_size.1, 45.0);
                 // Assign appropriate color
                 let color = self.cast_ray(&ray, 0);
                 // Assign pixel value
-                img.put_pixel(x, y, color.to_image_color().to_rgba());
+                img.put_pixel(x_local, y_local, color.to_image_color().to_rgba());
             }
         }
 
