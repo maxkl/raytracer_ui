@@ -1,7 +1,7 @@
 
 use std::ops::{Add, AddAssign, Mul};
 
-use image::Rgb;
+use image::{Rgb, Pixel};
 use serde::{Serialize, Deserialize};
 
 /// Represents RGB colors
@@ -71,10 +71,11 @@ impl Color {
     }
 
     pub fn from_rgb(rgb: Rgb<u8>) -> Color {
+        let data = rgb.channels();
         Color {
-            r: rgb.data[0] as f32 / 255.0,
-            g: rgb.data[1] as f32 / 255.0,
-            b: rgb.data[2] as f32 / 255.0,
+            r: data[0] as f32 / 255.0,
+            g: data[1] as f32 / 255.0,
+            b: data[2] as f32 / 255.0,
         }
     }
 
