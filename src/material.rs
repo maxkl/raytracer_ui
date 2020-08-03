@@ -57,6 +57,54 @@ impl Texture {
             img: img,
         })
     }
+
+    fn sample_nearest(&self, tex_coords: &TexCoords<f32>) -> Color {
+        let tex_w = self.img.width() as f32;
+        let tex_h = self.img.height() as f32;
+
+        let tex_x = (tex_coords.u * tex_w).round().modulo(tex_w) as u32;
+        let tex_y = (tex_coords.v * tex_h).round().modulo(tex_h) as u32;
+
+        Color::from_rgb(self.img.get_pixel(tex_x, tex_y).to_rgb())
+    }
+
+    fn sample_bilinear(&self, tex_coords: &TexCoords<f32>) -> Color {
+        let tex_w = self.img.width() as f32;
+        let tex_h = self.img.height() as f32;
+
+        let tex_x = tex_coords.u * tex_w;
+        let tex_y = tex_coords.v * tex_h;
+
+        let tex_x_1 = tex_x.floor();
+        let tex_x_2 = tex_x.ceil();
+        let tex_y_1 = tex_y.floor();
+        let tex_y_2 = tex_y.ceil();
+
+        let tex_x_1_wrapped = tex_x_1.modulo(tex_w) as u32;
+        let tex_x_2_wrapped = tex_x_2.modulo(tex_w) as u32;
+        let tex_y_1_wrapped = tex_y_1.modulo(tex_h) as u32;
+        let tex_y_2_wrapped = tex_y_2.modulo(tex_h) as u32;
+
+        let color_1_1 = Color::from_rgb(self.img.get_pixel(tex_x_1_wrapped, tex_y_1_wrapped).to_rgb());
+        let color_2_1 = Color::from_rgb(self.img.get_pixel(tex_x_2_wrapped, tex_y_1_wrapped).to_rgb());
+        let color_1_2 = Color::from_rgb(self.img.get_pixel(tex_x_1_wrapped, tex_y_2_wrapped).to_rgb());
+        let color_2_2 = Color::from_rgb(self.img.get_pixel(tex_x_2_wrapped, tex_y_2_wrapped).to_rgb());
+
+        let x_exact = tex_x_1 == tex_x_2;
+        let y_exact = tex_y_1 == tex_y_2;
+        if x_exact && y_exact {
+            color_1_1
+        } else if y_exact {
+            color_1_1 * (tex_x_2 - tex_x) + color_2_1 * (tex_x - tex_x_1)
+        } else if x_exact {
+            color_1_1 * (tex_y_2 - tex_y) + color_1_2 * (tex_y - tex_y_1)
+        } else {
+            color_1_1 * (tex_x_2 - tex_x) * (tex_y_2 - tex_y)
+                + color_2_1 * (tex_x - tex_x_1) * (tex_y_2 - tex_y)
+                + color_1_2 * (tex_x_2 - tex_x) * (tex_y - tex_y_1)
+                + color_2_2 * (tex_x - tex_x_1) * (tex_y - tex_y_1)
+        }
+    }
 }
 
 /// Represents the various ways a point can be colored
@@ -73,16 +121,7 @@ impl Coloration {
     pub fn color(&self, tex_coords: &TexCoords<f32>) -> Color {
         match self {
             Coloration::Color(color) => *color,
-            Coloration::Texture(tex) => {
-                let tex_w = tex.img.width() as f32;
-                let tex_h = tex.img.height() as f32;
-                // Map UV coordinates to pixel coordinates and wrap when they exceed the image boundaries
-                let tex_x = (tex_coords.u * tex_w).modulo(tex_w);
-                let tex_y = (tex_coords.v * tex_h).modulo(tex_h);
-
-                // Get color of pixel at the specified position
-                Color::from_rgb(tex.img.get_pixel(tex_x as u32, tex_y as u32).to_rgb())
-            }
+            Coloration::Texture(tex) => tex.sample_bilinear(tex_coords),
         }
     }
 }
