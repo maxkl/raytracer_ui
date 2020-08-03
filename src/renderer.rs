@@ -2,7 +2,7 @@
 use std::f32;
 
 use image::{DynamicImage, GenericImage, GenericImageView, Pixel};
-use cgmath::InnerSpace;
+use cgmath::{InnerSpace, Vector3};
 
 use crate::color::Color;
 use crate::ray::{Ray, Hit};
@@ -38,21 +38,54 @@ fn shade_diffuse(scene: &Scene, hit: &Hit) -> Color {
     color.clamp()
 }
 
+fn calc_fresnel_reflectivity(normal: &Vector3<f32>, incident: &Vector3<f32>, refractive_index: f32) -> f32 {
+    let eta_t;
+    let eta_i;
+    let mut i_dot_n = incident.dot(*normal);
+    if i_dot_n < 0.0 {
+        i_dot_n = -i_dot_n;
+
+        eta_t = refractive_index;
+        eta_i = 1.0;
+    } else {
+        eta_t = 1.0;
+        eta_i = refractive_index;
+    }
+
+    let sin_theta_t = eta_i / eta_t * (1.0 - i_dot_n.powi(2)).sqrt();
+
+    if sin_theta_t >= 1.0 {
+        1.0
+    } else {
+        let cos_theta_t = (1.0 - sin_theta_t.powi(2)).sqrt();
+        let r_s = (eta_t * i_dot_n - eta_i * cos_theta_t) / (eta_t * i_dot_n + eta_i * cos_theta_t);
+        let r_p = (eta_i * i_dot_n - eta_t * cos_theta_t) / (eta_i * i_dot_n + eta_t * cos_theta_t);
+        0.5 * (r_s.powi(2) + r_p.powi(2))
+    }
+}
+
 fn get_color(scene: &Scene, ray: &Ray, hit: &Hit, depth: u32) -> Color {
+    let is_refractive = hit.material.transparency > 0.0;
+    let is_reflective = hit.material.reflectivity > 0.0 || is_refractive;
+
     let diffuse_color = shade_diffuse(scene, hit);
 
-    let reflective_color = if hit.material.reflectivity > 0.0 {
+    let reflective_color = if is_reflective {
         let reflection_ray = Ray::create_reflection(&hit.normal, &ray.direction, &hit.point);
         cast_ray(scene, &reflection_ray, depth + 1)
     } else {
         Color::black()
     };
 
-    let refractive_color = if hit.material.transparency > 0.0 {
+    let refractive_color = if is_refractive {
+        let k_r = calc_fresnel_reflectivity(&hit.normal, &ray.direction, hit.material.refractive_index);
+
         let transmission_ray = Ray::create_transmission(&hit.normal, &ray.direction, &hit.point, hit.material.refractive_index);
-        transmission_ray
+        let refractive_color = transmission_ray
             .map(|transmission_ray| cast_ray(scene, &transmission_ray, depth + 1))
-            .unwrap_or_else(|| Color::black())
+            .unwrap_or_else(|| Color::black());
+
+        k_r * reflective_color + (1.0 - k_r) * refractive_color
     } else {
         Color::black()
     };
