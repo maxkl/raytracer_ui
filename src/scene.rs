@@ -8,6 +8,7 @@ use crate::lights::Light;
 /// Holds all information about the scene
 #[derive(Serialize, Deserialize)]
 pub struct Scene {
+    pub image_size: (u32, u32),
     /// Background color, assigned to pixels that are not covered by any object in the scene
     pub clear_color: Color,
     pub objects: Vec<Box<dyn Intersectable>>,

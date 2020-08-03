@@ -21,7 +21,8 @@ impl Renderer {
 
     /// Render the scene to a new image
     pub fn render(&self) -> DynamicImage {
-        let mut img = DynamicImage::new_rgb8(800, 600);
+        let size = self.scene.image_size;
+        let mut img = DynamicImage::new_rgb8(size.0, size.1);
 
         // Iterate over the entire image pixel by pixel
         let w = img.width();

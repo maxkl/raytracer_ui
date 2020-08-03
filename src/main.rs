@@ -27,8 +27,8 @@ enum Cmd {
 }
 
 struct ImageProperties {
-    width: usize,
-    height: usize,
+    width: u32,
+    height: u32,
 }
 
 enum CmdResult {
@@ -47,11 +47,13 @@ fn render_thread(rx: Receiver<Cmd>, tx: Sender<CmdResult>) {
                 Cmd::Load(scene_file_name) => {
                     let scene = load_scene(&scene_file_name).unwrap();
 
+                    let image_size = scene.image_size;
+
                     renderer = Some(Renderer::new(scene));
 
                     tx.send(CmdResult::Loaded(ImageProperties {
-                        width: 800,
-                        height: 600,
+                        width: image_size.0,
+                        height: image_size.1,
                     })).unwrap();
                 }
                 Cmd::Render => {
@@ -123,8 +125,8 @@ fn render_loop(scene_file_name: &str, output_file_name: &str) -> Result<(), Box<
 
                     let mut new_window = Window::new(
                         "Render result - ESC to exit",
-                        image_properties.width,
-                        image_properties.height,
+                        image_properties.width as usize,
+                        image_properties.height as usize,
                         WindowOptions::default()
                     ).expect("Failed to create window");
 
