@@ -9,7 +9,9 @@ use crate::ray::{Ray, Hit};
 use crate::scene::Scene;
 
 fn shade_diffuse(scene: &Scene, hit: &Hit) -> Color {
-    let mut color = Color::black();
+    let material_color = hit.material.color.color(&hit.tex_coords);
+
+    let mut color = material_color * scene.ambient_light_color;
 
     // Sum contributions by all light sources
     for light in scene.lights.iter() {
@@ -29,7 +31,6 @@ fn shade_diffuse(scene: &Scene, hit: &Hit) -> Color {
             // Calculate color using Lambert's Cosine Law
             let light_power = hit.normal.dot(to_light).max(0.0) * light.intensity_at(&hit.point);
             let reflection_factor = hit.material.albedo / f32::consts::PI;
-            let material_color = hit.material.color.color(&hit.tex_coords);
             color += material_color * light.color() * light_power * reflection_factor;
         }
     }
@@ -90,7 +91,7 @@ fn get_color(scene: &Scene, ray: &Ray, hit: &Hit, depth: u32) -> Color {
         Color::black()
     };
 
-    (diffuse_color * (1.0 - hit.material.reflectivity - hit.material.transparency) + reflective_color * hit.material.reflectivity + refractive_color * hit.material.transparency + scene.ambient_light_color).clamp()
+    (diffuse_color * (1.0 - hit.material.reflectivity - hit.material.transparency) + reflective_color * hit.material.reflectivity + refractive_color * hit.material.transparency).clamp()
 }
 
 fn cast_ray(scene: &Scene, ray: &Ray, depth: u32) -> Color {
