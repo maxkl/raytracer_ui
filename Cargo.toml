@@ -10,3 +10,4 @@ cgmath = { version = "0.17.0", features = ["serde"] }
 serde = { version = "1.0.114", features = ["derive"] }
 typetag = "0.1.5"
 ron = "0.6.0"
+minifb = "0.17.0"
