@@ -42,8 +42,37 @@ impl Ray {
 
     pub fn create_reflection(normal: &Vector3<f32>, incident: &Vector3<f32>, hit_point: &Point3<f32>) -> Ray {
         Ray {
-            origin: *hit_point,
+            origin: (hit_point + 1e-5 * normal),
             direction: incident - (2.0 * incident.dot(*normal) * normal),
+        }
+    }
+
+    pub fn create_transmission(normal: &Vector3<f32>, incident: &Vector3<f32>, hit_point: &Point3<f32>, refractive_index: f32) -> Option<Ray> {
+        let ref_n;
+        let eta_t;
+        let eta_i;
+        let mut i_dot_n = incident.dot(*normal);
+        if i_dot_n < 0.0 {
+            i_dot_n = -i_dot_n;
+
+            ref_n = *normal;
+            eta_t = refractive_index;
+            eta_i = 1.0;
+        } else {
+            ref_n = -*normal;
+            eta_t = 1.0;
+            eta_i = refractive_index;
+        }
+
+        let eta = eta_i / eta_t;
+        let k = 1.0 - eta.powi(2) * (1.0 - i_dot_n.powi(2));
+        if k < 0.0 {
+            None
+        } else {
+            Some(Ray {
+                origin: (hit_point - 1e-5 * ref_n),
+                direction: incident * eta + (i_dot_n * eta - k.sqrt()) * ref_n,
+            })
         }
     }
 }

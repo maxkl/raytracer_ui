@@ -48,7 +48,16 @@ fn get_color(scene: &Scene, ray: &Ray, hit: &Hit, depth: u32) -> Color {
         Color::black()
     };
 
-    (diffuse_color * (1.0 - hit.material.reflectivity) + reflective_color * hit.material.reflectivity + scene.ambient_light_color).clamp()
+    let refractive_color = if hit.material.transparency > 0.0 {
+        let transmission_ray = Ray::create_transmission(&hit.normal, &ray.direction, &hit.point, hit.material.refractive_index);
+        transmission_ray
+            .map(|transmission_ray| cast_ray(scene, &transmission_ray, depth + 1))
+            .unwrap_or_else(|| Color::black())
+    } else {
+        Color::black()
+    };
+
+    (diffuse_color * (1.0 - hit.material.reflectivity - hit.material.transparency) + reflective_color * hit.material.reflectivity + refractive_color * hit.material.transparency + scene.ambient_light_color).clamp()
 }
 
 fn cast_ray(scene: &Scene, ray: &Ray, depth: u32) -> Color {

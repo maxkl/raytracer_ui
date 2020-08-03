@@ -102,7 +102,15 @@ impl Intersectable for Sphere {
         }
 
         // Choose the intersection point that is closer to the ray origin
-        let distance = if t0 < t1 { t0 } else { t1 };
+        let distance = if t0 < 0.0 {
+            t1
+        } else if t1 < 0.0 {
+            t0
+        } else if t0 < t1 {
+            t0
+        } else {
+            t1
+        };
 
         let hit_point = ray.origin + distance * ray.direction;
         let normal = (hit_point - self.center).normalize();

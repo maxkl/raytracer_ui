@@ -93,4 +93,6 @@ pub struct Material {
     pub color: Coloration,
     pub albedo: f32,
     pub reflectivity: f32,
+    pub transparency: f32,
+    pub refractive_index: f32,
 }
