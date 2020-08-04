@@ -1,4 +1,4 @@
-raytracer
-=========
+raytracer_ui
+============
 
-A raytracer written in Rust.
+A command line interface with live preview for [raytracer](https://gitlab.com/maxkl2/raytracer).
