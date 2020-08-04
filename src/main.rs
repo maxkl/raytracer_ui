@@ -95,8 +95,18 @@ impl RenderThread {
     }
 }
 
+fn assign_chunk(render_thread: &RenderThread, chunks: &mut VecDeque<RenderArea>) {
+    if let Some(chunk) = chunks.pop_front() {
+        render_thread.tx.send(chunk).unwrap();
+    }
+}
+
 fn render_loop(scene: &Scene) -> Result<(), Box<dyn Error>> {
-    let render_thread = RenderThread::start(scene.clone());
+    let thread_count = num_cpus::get();
+
+    println!("Using {} threads", thread_count);
+
+    let render_threads: Vec<_> = (0..thread_count).map(|_| RenderThread::start(scene.clone())).collect();
 
     let width = scene.image_size.0;
     let height = scene.image_size.1;
@@ -116,22 +126,23 @@ fn render_loop(scene: &Scene) -> Result<(), Box<dyn Error>> {
 
     let mut chunks = gen_chunks(width, height, 100);
 
-    let chunk = chunks.pop_front().unwrap();
-    render_thread.tx.send(chunk).unwrap();
+    for render_thread in &render_threads {
+        assign_chunk(render_thread, &mut chunks);
+    }
 
     while window.is_open() && !window.is_key_down(Key::Escape) {
-        match render_thread.rx.try_recv() {
-            Ok(result) => {
-                image.copy_from(&result.image, result.x, result.y).unwrap();
-                image_changed = true;
+        for render_thread in &render_threads {
+            match render_thread.rx.try_recv() {
+                Ok(result) => {
+                    image.copy_from(&result.image, result.x, result.y).unwrap();
+                    image_changed = true;
 
-                if let Some(chunk) = chunks.pop_front() {
-                    render_thread.tx.send(chunk).unwrap();
-                }
-            },
-            Err(TryRecvError::Empty) => { /* No new message */ },
-            Err(TryRecvError::Disconnected) => panic!("Render thread stopped unexpectedly"),
-        };
+                    assign_chunk(render_thread, &mut chunks);
+                },
+                Err(TryRecvError::Empty) => { /* No new message */ },
+                Err(TryRecvError::Disconnected) => panic!("Render thread stopped unexpectedly"),
+            };
+        }
 
         if image_changed {
             image_changed = false;
