@@ -2,6 +2,7 @@
 use std::error::Error;
 use std::{env, process, fs, thread};
 use std::time::Duration;
+use std::thread::JoinHandle;
 use std::sync::mpsc::{channel, Receiver, Sender, TryRecvError};
 use std::collections::VecDeque;
 
@@ -34,25 +35,6 @@ struct RenderResult {
     y: u32,
 }
 
-fn render_thread(scene: Scene, rx: Receiver<RenderArea>, tx: Sender<RenderResult>) {
-    let renderer = Renderer::new(scene);
-
-    loop {
-        match rx.recv() {
-            Ok(area) => {
-                let result = renderer.render_rect(area.x, area.y, area.w, area.h);
-
-                tx.send(RenderResult {
-                    image: result,
-                    x: area.x,
-                    y: area.y
-                }).unwrap();
-            }
-            Err(_) => break
-        }
-    }
-}
-
 fn gen_chunks(w: u32, h: u32, chunk_size: u32) -> VecDeque<RenderArea> {
     let mut chunks = VecDeque::new();
     for y in (0..h).step_by(chunk_size as usize) {
@@ -69,17 +51,52 @@ fn gen_chunks(w: u32, h: u32, chunk_size: u32) -> VecDeque<RenderArea> {
     chunks
 }
 
+struct RenderThread {
+    join_handle: JoinHandle<()>,
+    tx: Sender<RenderArea>,
+    rx: Receiver<RenderResult>,
+}
+
+impl RenderThread {
+    fn run(scene: Scene, rx: Receiver<RenderArea>, tx: Sender<RenderResult>) {
+        let renderer = Renderer::new(scene);
+
+        loop {
+            match rx.recv() {
+                Ok(area) => {
+                    let result = renderer.render_rect(area.x, area.y, area.w, area.h);
+
+                    tx.send(RenderResult {
+                        image: result,
+                        x: area.x,
+                        y: area.y
+                    }).unwrap();
+                }
+                Err(_) => break
+            }
+        }
+    }
+
+    fn start(scene: Scene) -> RenderThread {
+        let (join_handle, rx, tx) = {
+            let (to_thread, from_main) = channel();
+            let (to_main, from_thread) = channel();
+
+            let join_handle = thread::spawn(move || RenderThread::run(scene, from_main, to_main));
+
+            (join_handle, from_thread, to_thread)
+        };
+
+        RenderThread {
+            join_handle,
+            tx,
+            rx,
+        }
+    }
+}
+
 fn render_loop(scene: &Scene) -> Result<(), Box<dyn Error>> {
-    let (rx, tx) = {
-        let (to_thread, from_main) = channel();
-        let (to_main, from_thread) = channel();
-
-        let thread_scene = scene.clone();
-
-        thread::spawn(move || render_thread(thread_scene, from_main, to_main));
-
-        (from_thread, to_thread)
-    };
+    let render_thread = RenderThread::start(scene.clone());
 
     let width = scene.image_size.0;
     let height = scene.image_size.1;
@@ -100,16 +117,16 @@ fn render_loop(scene: &Scene) -> Result<(), Box<dyn Error>> {
     let mut chunks = gen_chunks(width, height, 100);
 
     let chunk = chunks.pop_front().unwrap();
-    tx.send(chunk).unwrap();
+    render_thread.tx.send(chunk).unwrap();
 
     while window.is_open() && !window.is_key_down(Key::Escape) {
-        match rx.try_recv() {
+        match render_thread.rx.try_recv() {
             Ok(result) => {
                 image.copy_from(&result.image, result.x, result.y).unwrap();
                 image_changed = true;
 
                 if let Some(chunk) = chunks.pop_front() {
-                    tx.send(chunk).unwrap();
+                    render_thread.tx.send(chunk).unwrap();
                 }
             },
             Err(TryRecvError::Empty) => { /* No new message */ },
