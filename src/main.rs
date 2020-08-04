@@ -1,7 +1,7 @@
 
 use std::error::Error;
 use std::{env, process, fs, thread};
-use std::time::{Instant, Duration};
+use std::time::Duration;
 use std::sync::mpsc::{channel, Receiver, Sender, TryRecvError};
 use std::collections::VecDeque;
 
@@ -21,174 +21,111 @@ pub fn load_scene(scene_file_name: &str) -> Result<Scene, Box<dyn Error>> {
     Ok(scene)
 }
 
-enum Cmd {
-    Load(String),
-    Render,
-    RenderRect(u32, u32, u32, u32),
+struct RenderArea {
+    x: u32,
+    y: u32,
+    w: u32,
+    h: u32,
 }
 
-struct ImageProperties {
-    width: u32,
-    height: u32,
+struct RenderResult {
+    image: DynamicImage,
+    x: u32,
+    y: u32,
 }
 
-enum CmdResult {
-    Loaded(ImageProperties),
-    Rendered(DynamicImage),
-    RenderedRect(DynamicImage, u32, u32),
-}
-
-fn render_thread(rx: Receiver<Cmd>, tx: Sender<CmdResult>) {
-    let mut renderer = None;
+fn render_thread(scene: Scene, rx: Receiver<RenderArea>, tx: Sender<RenderResult>) {
+    let renderer = Renderer::new(scene);
 
     loop {
         match rx.recv() {
-            Ok(cmd) => match cmd {
-                Cmd::Load(scene_file_name) => {
-                    let scene = load_scene(&scene_file_name).unwrap();
+            Ok(area) => {
+                let result = renderer.render_rect(area.x, area.y, area.w, area.h);
 
-                    let image_size = scene.image_size;
-
-                    renderer = Some(Renderer::new(scene));
-
-                    tx.send(CmdResult::Loaded(ImageProperties {
-                        width: image_size.0,
-                        height: image_size.1,
-                    })).unwrap();
-                }
-                Cmd::Render => {
-                    let renderer = renderer.as_ref().unwrap();
-
-                    let now = Instant::now();
-
-                    let result = renderer.render();
-
-                    let duration = now.elapsed();
-                    println!("Rendered scene in {:.3} ms", duration.as_micros() as f64 * 1e-3);
-
-                    tx.send(CmdResult::Rendered(result)).unwrap();
-                }
-                Cmd::RenderRect(x, y, w, h) => {
-                    let renderer = renderer.as_ref().unwrap();
-
-                    let result = renderer.render_rect(x, y, w, h);
-
-                    tx.send(CmdResult::RenderedRect(result, x, y)).unwrap();
-                }
+                tx.send(RenderResult {
+                    image: result,
+                    x: area.x,
+                    y: area.y
+                }).unwrap();
             }
             Err(_) => break
         }
     }
 }
 
-fn gen_chunks(w: u32, h: u32, chunk_size: u32) -> VecDeque<(u32, u32, u32, u32)> {
+fn gen_chunks(w: u32, h: u32, chunk_size: u32) -> VecDeque<RenderArea> {
     let mut chunks = VecDeque::new();
     for y in (0..h).step_by(chunk_size as usize) {
         for x in (0..w).step_by(chunk_size as usize) {
-            chunks.push_back((x, y, (w - x).min(chunk_size), (h - y).min(chunk_size)));
+            chunks.push_back(RenderArea {
+                x,
+                y,
+                w: (w - x).min(chunk_size),
+                h: (h - y).min(chunk_size)
+            });
         }
     }
 
     chunks
 }
 
-fn render_loop(scene_file_name: &str, output_file_name: &str) -> Result<(), Box<dyn Error>> {
+fn render_loop(scene: &Scene) -> Result<(), Box<dyn Error>> {
     let (rx, tx) = {
         let (to_thread, from_main) = channel();
         let (to_main, from_thread) = channel();
 
-        thread::spawn(move || render_thread(from_main, to_main));
+        let thread_scene = scene.clone();
+
+        thread::spawn(move || render_thread(thread_scene, from_main, to_main));
 
         (from_thread, to_thread)
     };
 
-    let mut window = None;
+    let width = scene.image_size.0;
+    let height = scene.image_size.1;
 
-    let mut buffer: Vec<u32> = Vec::new();
-    let mut image = None;
+    let mut window = Window::new(
+        "Render result - ESC to exit",
+        width as usize,
+        height as usize,
+        WindowOptions::default()
+    ).expect("Failed to create window");
+    window.limit_update_rate(Some(Duration::from_micros(16600)));
+
+    let mut buffer: Vec<u32> = vec![0; width as usize * height as usize];
+    let mut image = DynamicImage::new_rgb8(width, height);
 
     let mut image_changed = false;
 
-    let mut chunks = VecDeque::new();
+    let mut chunks = gen_chunks(width, height, 100);
 
-    tx.send(Cmd::Load(scene_file_name.to_string())).unwrap();
+    let chunk = chunks.pop_front().unwrap();
+    tx.send(chunk).unwrap();
 
-    let mut stop = false;
+    while window.is_open() && !window.is_key_down(Key::Escape) {
+        match rx.try_recv() {
+            Ok(result) => {
+                image.copy_from(&result.image, result.x, result.y).unwrap();
+                image_changed = true;
 
-    while !stop {
-        let result = match window {
-            Some(_) => match rx.try_recv() {
-                Ok(result) => Some(result),
-                Err(TryRecvError::Empty) => None,
-                Err(TryRecvError::Disconnected) => panic!("Render thread stopped unexpectedly"),
-            }
-            None => match rx.recv() {
-                Ok(result) => Some(result),
-                Err(_) => panic!("Render thread stopped unexpectedly"),
-            }
+                if let Some(chunk) = chunks.pop_front() {
+                    tx.send(chunk).unwrap();
+                }
+            },
+            Err(TryRecvError::Empty) => { /* No new message */ },
+            Err(TryRecvError::Disconnected) => panic!("Render thread stopped unexpectedly"),
         };
 
-        if let Some(result) = result {
-            match result {
-                CmdResult::Loaded(image_properties) => {
-                    image = Some(DynamicImage::new_rgb8(image_properties.width as u32, image_properties.height as u32));
-                    image_changed = true;
+        if image_changed {
+            image_changed = false;
 
-                    let mut new_window = Window::new(
-                        "Render result - ESC to exit",
-                        image_properties.width as usize,
-                        image_properties.height as usize,
-                        WindowOptions::default()
-                    ).expect("Failed to create window");
-
-                    new_window.limit_update_rate(Some(Duration::from_micros(16600)));
-
-                    window = Some(new_window);
-
-                    chunks = gen_chunks(image_properties.width, image_properties.height, 100);
-
-                    let chunk = chunks.pop_front().unwrap();
-                    tx.send(Cmd::RenderRect(chunk.0, chunk.1, chunk.2, chunk.3)).unwrap();
-                }
-                CmdResult::Rendered(img) => {
-                    image = Some(img);
-                    image_changed = true;
-                }
-                CmdResult::RenderedRect(img, x, y) => {
-                    let image = image.as_mut().unwrap();
-                    image.copy_from(&img, x, y).unwrap();
-                    image_changed = true;
-
-                    if let Some(chunk) = chunks.pop_front() {
-                        tx.send(Cmd::RenderRect(chunk.0, chunk.1, chunk.2, chunk.3)).unwrap();
-                    }
-                }
+            for (i, (_x, _y, color)) in image.pixels().enumerate() {
+                let channels = color.channels();
+                buffer[i] = ((channels[0] as u32) << 16) | ((channels[1] as u32) << 8) | channels[2] as u32;
             }
         }
 
-        if let Some(window) = &mut window {
-            if image_changed {
-                image_changed = false;
-
-                let img = image.as_ref().unwrap();
-                let width = img.width() as usize;
-                let height = img.height() as usize;
-
-                buffer.resize(width * height, 0);
-                for (i, (_x, _y, color)) in img.pixels().enumerate() {
-                    let channels = color.channels();
-                    buffer[i] = ((channels[0] as u32) << 16) | ((channels[1] as u32) << 8) | channels[2] as u32;
-                }
-
-                window.update_with_buffer(&buffer, width, height).unwrap();
-            } else {
-                window.update();
-            }
-
-            if !window.is_open() || window.is_key_down(Key::Escape) {
-                stop = true;
-            }
-        }
+        window.update_with_buffer(&buffer, width as usize, height as usize).unwrap();
     }
 
     Ok(())
@@ -206,7 +143,9 @@ fn main() {
     let scene_file_name = &args[1];
     let output_file_name = &args[2];
 
-    if let Err(err) = render_loop(scene_file_name, output_file_name) {
+    let scene = load_scene(&scene_file_name).unwrap();
+
+    if let Err(err) = render_loop(&scene) {
         eprintln!("Error: {}", err);
         process::exit(1);
     }

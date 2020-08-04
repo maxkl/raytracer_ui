@@ -2,6 +2,7 @@
 use std::cmp::Ordering;
 
 use cgmath::{Point3, Vector3, InnerSpace};
+use dyn_clone::DynClone;
 
 use crate::material::{Material, TexCoords};
 
@@ -116,7 +117,9 @@ impl<'a> Hit<'a> {
 
 /// Implement for objects that a ray can intersect with
 #[typetag::serde(tag = "type")]
-pub trait Intersectable {
+pub trait Intersectable: DynClone + Send {
     /// Cast a ray at the object. Returns true if it hits
     fn intersect(&self, ray: &Ray) -> Option<Hit>;
 }
+
+dyn_clone::clone_trait_object!(Intersectable);

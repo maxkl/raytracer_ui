@@ -3,20 +3,23 @@ use std::f32;
 
 use cgmath::{Vector3, Point3, InnerSpace};
 use serde::{Serialize, Deserialize};
+use dyn_clone::DynClone;
 
 use crate::color::Color;
 use crate::math_util::deserialize_normalized;
 
 #[typetag::serde(tag = "type")]
-pub trait Light {
+pub trait Light: DynClone + Send {
     fn direction_from(&self, point: &Point3<f32>) -> Vector3<f32>;
     fn color(&self, ) -> Color;
     fn intensity_at(&self, point: &Point3<f32>) -> f32;
     fn distance_at(&self, point: &Point3<f32>) -> f32;
 }
 
+dyn_clone::clone_trait_object!(Light);
+
 /// A light that only has a direction, e.g. from the sun
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct DirectionalLight {
     #[serde(deserialize_with = "deserialize_normalized")]
     pub direction: Vector3<f32>,
@@ -47,7 +50,7 @@ impl Light for DirectionalLight {
 }
 
 /// A light that's only a single point and radiates uniformly in all directions
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct PointLight {
     pub point: Point3<f32>,
     pub color: Color,

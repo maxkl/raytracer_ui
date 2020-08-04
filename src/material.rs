@@ -17,6 +17,7 @@ pub struct TexCoords<T> {
 /// Represents a texture.
 ///
 /// Serializes/deserializes to/from a string, which is the path to the image file
+#[derive(Clone)]
 pub struct Texture {
     pub path: PathBuf,
     pub img: DynamicImage,
@@ -108,7 +109,7 @@ impl Texture {
 }
 
 /// Represents the various ways a point can be colored
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub enum Coloration {
     /// Uniform color
     Color(Color),
@@ -127,7 +128,7 @@ impl Coloration {
 }
 
 /// Data struct collecting various material properties
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Material {
     pub color: Coloration,
     pub albedo: f32,

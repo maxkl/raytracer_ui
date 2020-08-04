@@ -6,7 +6,7 @@ use crate::ray::{Ray, Hit, Intersectable};
 use crate::lights::Light;
 
 /// Holds all information about the scene
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Scene {
     pub image_size: (u32, u32),
     /// Background color, assigned to pixels that are not covered by any object in the scene
