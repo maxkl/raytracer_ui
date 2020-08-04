@@ -6,7 +6,7 @@ use std::thread::JoinHandle;
 use std::sync::mpsc::{channel, Receiver, Sender, TryRecvError};
 use std::collections::VecDeque;
 
-use image::{DynamicImage, GenericImageView, Pixel, GenericImage};
+use raytracer::image::{DynamicImage, GenericImageView, Pixel, GenericImage};
 use minifb::{Window, WindowOptions, Key};
 use nfd::Response;
 

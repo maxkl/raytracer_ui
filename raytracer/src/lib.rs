@@ -10,3 +10,5 @@ mod renderer;
 
 pub use scene::Scene;
 pub use renderer::Renderer;
+
+pub use image;

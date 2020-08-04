@@ -1,16 +1,14 @@
 [package]
-name = "raytracer"
+name = "raytracer_cli"
 version = "0.1.0"
 authors = ["maxkl <max@maxkl.de>"]
 edition = "2018"
 
+[workspace]
+
 [dependencies]
-image = "0.23.8"
-cgmath = { version = "0.17.0", features = ["serde"] }
-serde = { version = "1.0.114", features = ["derive"] }
-typetag = "0.1.5"
+raytracer = { path = "raytracer" }
 ron = "0.6.0"
 minifb = "0.17.0"
-dyn-clone = "1.0.2"
 num_cpus = "1.13.0"
 nfd = "0.0.4"
