@@ -639,7 +639,6 @@ version = "0.1.0"
 dependencies = [
  "cgmath 0.17.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "dyn-clone 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "ron 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.114 (registry+https://github.com/rust-lang/crates.io-index)",
  "typetag 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
