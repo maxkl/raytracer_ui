@@ -8,6 +8,7 @@ use std::collections::VecDeque;
 
 use image::{DynamicImage, GenericImageView, Pixel, GenericImage};
 use minifb::{Window, WindowOptions, Key};
+use nfd::Response;
 
 use raytracer::{Scene, Renderer};
 
@@ -112,7 +113,7 @@ fn render_loop(scene: &Scene) -> Result<(), Box<dyn Error>> {
     let height = scene.image_size.1;
 
     let mut window = Window::new(
-        "Render result - ESC to exit",
+        "Render result - S to save, ESC to exit",
         width as usize,
         height as usize,
         WindowOptions::default()
@@ -144,6 +145,21 @@ fn render_loop(scene: &Scene) -> Result<(), Box<dyn Error>> {
             };
         }
 
+        if chunks.is_empty() {
+            // Rendering done
+
+            if window.is_key_down(Key::S) {
+                match nfd::open_save_dialog(Some("png,jpg,jpeg"), None).unwrap() {
+                    Response::Okay(path) => {
+                        image.save(path.clone()).unwrap();
+                        println!("Image saved to {}", path);
+                    },
+                    Response::OkayMultiple(_) => unreachable!(),
+                    Response::Cancel => {},
+                }
+            }
+        }
+
         if image_changed {
             image_changed = false;
 
@@ -162,14 +178,13 @@ fn render_loop(scene: &Scene) -> Result<(), Box<dyn Error>> {
 fn main() {
     let args = env::args().collect::<Vec<_>>();
 
-    if args.len() != 3 {
+    if args.len() != 2 {
         eprintln!("Error: incorrect number of arguments");
-        eprintln!("Usage: {} <scene file name> <output file name>", args[0]);
+        eprintln!("Usage: {} <scene file name>", args[0]);
         process::exit(1);
     }
 
     let scene_file_name = &args[1];
-    let output_file_name = &args[2];
 
     let scene = load_scene(&scene_file_name).unwrap();
 
