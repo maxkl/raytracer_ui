@@ -5,15 +5,30 @@ use std::time::Duration;
 use std::thread::JoinHandle;
 use std::sync::mpsc::{channel, Receiver, Sender, TryRecvError};
 use std::collections::VecDeque;
+use std::path::Path;
 
-use raytracer::image::{DynamicImage, GenericImageView, Pixel, GenericImage};
+use image::{DynamicImage, GenericImageView, Pixel, GenericImage};
 use minifb::{Window, WindowOptions, Key};
 use nfd::Response;
+use serde::{Serialize, Deserialize};
 
-use raytracer::{Scene, Renderer};
+use raytracer::{Renderer, Scene, RgbImage, ImageLoader};
+
+#[derive(Clone, Serialize, Deserialize)]
+pub struct ImageLoaderImpl {}
+
+impl ImageLoader for ImageLoaderImpl {
+    fn load_image(path: &Path) -> Result<RgbImage, Box<dyn Error>> {
+        let img = image::open(&path)?;
+        let w = img.width();
+        let h = img.height();
+        let data = img.into_rgb().into_raw();
+        Ok(RgbImage::from_raw(w as usize, h as usize, data))
+    }
+}
 
 /// Load a scene from a scene definition file in RON format
-pub fn load_scene(scene_file_name: &str) -> Result<Scene, Box<dyn Error>> {
+pub fn load_scene(scene_file_name: &str) -> Result<Scene<ImageLoaderImpl>, Box<dyn Error>> {
     // Load file as string
     let source = fs::read_to_string(scene_file_name)?;
 
@@ -24,22 +39,22 @@ pub fn load_scene(scene_file_name: &str) -> Result<Scene, Box<dyn Error>> {
 }
 
 struct RenderArea {
-    x: u32,
-    y: u32,
-    w: u32,
-    h: u32,
+    x: usize,
+    y: usize,
+    w: usize,
+    h: usize,
 }
 
 struct RenderResult {
-    image: DynamicImage,
-    x: u32,
-    y: u32,
+    image: RgbImage,
+    x: usize,
+    y: usize,
 }
 
-fn gen_chunks(w: u32, h: u32, chunk_size: u32) -> VecDeque<RenderArea> {
+fn gen_chunks(w: usize, h: usize, chunk_size: usize) -> VecDeque<RenderArea> {
     let mut chunks = VecDeque::new();
-    for y in (0..h).step_by(chunk_size as usize) {
-        for x in (0..w).step_by(chunk_size as usize) {
+    for y in (0..h).step_by(chunk_size) {
+        for x in (0..w).step_by(chunk_size) {
             chunks.push_back(RenderArea {
                 x,
                 y,
@@ -59,7 +74,7 @@ struct RenderThread {
 }
 
 impl RenderThread {
-    fn run(scene: Scene, rx: Receiver<RenderArea>, tx: Sender<RenderResult>) {
+    fn run(scene: Scene<ImageLoaderImpl>, rx: Receiver<RenderArea>, tx: Sender<RenderResult>) {
         let renderer = Renderer::new(scene);
 
         loop {
@@ -78,7 +93,7 @@ impl RenderThread {
         }
     }
 
-    fn start(scene: Scene) -> RenderThread {
+    fn start(scene: Scene<ImageLoaderImpl>) -> RenderThread {
         let (join_handle, rx, tx) = {
             let (to_thread, from_main) = channel();
             let (to_main, from_thread) = channel();
@@ -102,7 +117,7 @@ fn assign_chunk(render_thread: &RenderThread, chunks: &mut VecDeque<RenderArea>)
     }
 }
 
-fn render_loop(scene: &Scene) -> Result<(), Box<dyn Error>> {
+fn render_loop(scene: &Scene<ImageLoaderImpl>) -> Result<(), Box<dyn Error>> {
     let thread_count = num_cpus::get();
 
     println!("Using {} threads", thread_count);
@@ -114,14 +129,14 @@ fn render_loop(scene: &Scene) -> Result<(), Box<dyn Error>> {
 
     let mut window = Window::new(
         "Render result - S to save, ESC to exit",
-        width as usize,
-        height as usize,
+        width,
+        height,
         WindowOptions::default()
     ).expect("Failed to create window");
     window.limit_update_rate(Some(Duration::from_micros(16600)));
 
-    let mut buffer: Vec<u32> = vec![0; width as usize * height as usize];
-    let mut image = DynamicImage::new_rgb8(width, height);
+    let mut buffer: Vec<u32> = vec![0; width * height];
+    let mut image = DynamicImage::new_rgb8(width as u32, height as u32);
 
     let mut image_changed = false;
 
@@ -135,7 +150,18 @@ fn render_loop(scene: &Scene) -> Result<(), Box<dyn Error>> {
         for render_thread in &render_threads {
             match render_thread.rx.try_recv() {
                 Ok(result) => {
-                    image.copy_from(&result.image, result.x, result.y).unwrap();
+                    let RenderResult {
+                        image: result_image,
+                        x: result_x,
+                        y: result_y
+                    } = result;
+
+                    let w = result_image.width();
+                    let h = result_image.height();
+                    let data = result_image.into_raw();
+
+                    let img = DynamicImage::ImageRgb8(image::RgbImage::from_raw(w as u32, h as u32, data).unwrap());
+                    image.copy_from(&img, result_x as u32, result_y as u32).unwrap();
                     image_changed = true;
 
                     assign_chunk(render_thread, &mut chunks);
@@ -169,7 +195,7 @@ fn render_loop(scene: &Scene) -> Result<(), Box<dyn Error>> {
             }
         }
 
-        window.update_with_buffer(&buffer, width as usize, height as usize).unwrap();
+        window.update_with_buffer(&buffer, width, height).unwrap();
     }
 
     Ok(())
