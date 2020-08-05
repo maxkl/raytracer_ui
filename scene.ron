@@ -1,5 +1,6 @@
 Scene(
     image_size: (800, 600),
+    aa_samples: 64,
     clear_color: (r: 0.6, g: 0.8, b: 1),
     materials: [
         (
