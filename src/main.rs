@@ -12,12 +12,12 @@ use minifb::{Window, WindowOptions, Key};
 use nfd::Response;
 use serde::{Serialize, Deserialize};
 
-use raytracer::{Renderer, Scene, RgbImage, ImageLoader};
+use raytracer::{Renderer, Scene, RgbImage, AssetLoader};
 
 #[derive(Clone, Serialize, Deserialize)]
-pub struct ImageLoaderImpl {}
+pub struct AssetLoaderImpl {}
 
-impl ImageLoader for ImageLoaderImpl {
+impl AssetLoader for AssetLoaderImpl {
     fn load_image(path: &Path) -> Result<RgbImage, Box<dyn Error>> {
         let img = image::open(&path)?;
         let w = img.width();
@@ -28,7 +28,7 @@ impl ImageLoader for ImageLoaderImpl {
 }
 
 /// Load a scene from a scene definition file in RON format
-pub fn load_scene(scene_file_name: &str) -> Result<Scene<ImageLoaderImpl>, Box<dyn Error>> {
+pub fn load_scene(scene_file_name: &str) -> Result<Scene<AssetLoaderImpl>, Box<dyn Error>> {
     // Load file as string
     let source = fs::read_to_string(scene_file_name)?;
 
@@ -74,7 +74,7 @@ struct RenderThread {
 }
 
 impl RenderThread {
-    fn run(scene: Scene<ImageLoaderImpl>, rx: Receiver<RenderArea>, tx: Sender<RenderResult>) {
+    fn run(scene: Scene<AssetLoaderImpl>, rx: Receiver<RenderArea>, tx: Sender<RenderResult>) {
         let renderer = Renderer::new(scene);
 
         loop {
@@ -93,7 +93,7 @@ impl RenderThread {
         }
     }
 
-    fn start(scene: Scene<ImageLoaderImpl>) -> RenderThread {
+    fn start(scene: Scene<AssetLoaderImpl>) -> RenderThread {
         let (join_handle, rx, tx) = {
             let (to_thread, from_main) = channel();
             let (to_main, from_thread) = channel();
@@ -117,7 +117,7 @@ fn assign_chunk(render_thread: &RenderThread, chunks: &mut VecDeque<RenderArea>)
     }
 }
 
-fn render_loop(scene: &Scene<ImageLoaderImpl>) -> Result<(), Box<dyn Error>> {
+fn render_loop(scene: &Scene<AssetLoaderImpl>) -> Result<(), Box<dyn Error>> {
     let thread_count = num_cpus::get();
 
     println!("Using {} threads", thread_count);
