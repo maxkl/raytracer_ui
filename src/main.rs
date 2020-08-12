@@ -1,7 +1,7 @@
 
 use std::error::Error;
 use std::{env, process, fs, thread};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use std::thread::JoinHandle;
 use std::sync::mpsc::{channel, Receiver, Sender, TryRecvError};
 use std::collections::VecDeque;
@@ -12,23 +12,38 @@ use minifb::{Window, WindowOptions, Key};
 use nfd::Response;
 use serde::{Serialize, Deserialize};
 
-use raytracer::{Renderer, Scene, RgbImage, AssetLoader};
+use raytracer::{Renderer, Scene, RgbImage, asset_loader, ObjParser, MeshData};
+use raytracer::asset_loader::AssetLoader;
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct AssetLoaderImpl {}
 
 impl AssetLoader for AssetLoaderImpl {
-    fn load_image(path: &Path) -> Result<RgbImage, Box<dyn Error>> {
+    fn load_image(&self, path: &Path) -> Result<RgbImage, Box<dyn Error>> {
         let img = image::open(&path)?;
         let w = img.width();
         let h = img.height();
         let data = img.into_rgb().into_raw();
         Ok(RgbImage::from_raw(w as usize, h as usize, data))
     }
+
+    fn load_obj(&self, path: &Path) -> Result<MeshData, Box<dyn Error>> {
+        let obj_str = fs::read_to_string(path)?;
+
+        let mesh = ObjParser::parse(&obj_str)?;
+
+        Ok(mesh)
+    }
+}
+
+impl AssetLoaderImpl {
+    fn new() -> AssetLoaderImpl {
+        AssetLoaderImpl {}
+    }
 }
 
 /// Load a scene from a scene definition file in RON format
-pub fn load_scene(scene_file_name: &str) -> Result<Scene<AssetLoaderImpl>, Box<dyn Error>> {
+pub fn load_scene(scene_file_name: &str) -> Result<Scene, Box<dyn Error>> {
     // Load file as string
     let source = fs::read_to_string(scene_file_name)?;
 
@@ -74,7 +89,7 @@ struct RenderThread {
 }
 
 impl RenderThread {
-    fn run(scene: Scene<AssetLoaderImpl>, rx: Receiver<RenderArea>, tx: Sender<RenderResult>) {
+    fn run(scene: Scene, rx: Receiver<RenderArea>, tx: Sender<RenderResult>) {
         let renderer = Renderer::new(scene);
 
         loop {
@@ -93,7 +108,7 @@ impl RenderThread {
         }
     }
 
-    fn start(scene: Scene<AssetLoaderImpl>) -> RenderThread {
+    fn start(scene: Scene) -> RenderThread {
         let (join_handle, rx, tx) = {
             let (to_thread, from_main) = channel();
             let (to_main, from_thread) = channel();
@@ -117,15 +132,16 @@ fn assign_chunk(render_thread: &RenderThread, chunks: &mut VecDeque<RenderArea>)
     }
 }
 
-fn render_loop(scene: &Scene<AssetLoaderImpl>) -> Result<(), Box<dyn Error>> {
+fn render_loop(scene: &Scene) -> Result<(), Box<dyn Error>> {
     let thread_count = num_cpus::get();
 
     println!("Using {} threads", thread_count);
 
     let render_threads: Vec<_> = (0..thread_count).map(|_| RenderThread::start(scene.clone())).collect();
 
-    let width = scene.image_size.0;
-    let height = scene.image_size.1;
+    let image_size = scene.camera.resolution;
+    let width = image_size.0;
+    let height = image_size.1;
 
     let mut window = Window::new(
         "Render result - S to save, ESC to exit",
@@ -141,6 +157,10 @@ fn render_loop(scene: &Scene<AssetLoaderImpl>) -> Result<(), Box<dyn Error>> {
     let mut image_changed = false;
 
     let mut chunks = gen_chunks(width, height, 100);
+    let chunks_total = chunks.len();
+    let mut chunks_completed = 0;
+
+    let start_time = Instant::now();
 
     for render_thread in &render_threads {
         assign_chunk(render_thread, &mut chunks);
@@ -163,6 +183,12 @@ fn render_loop(scene: &Scene<AssetLoaderImpl>) -> Result<(), Box<dyn Error>> {
                     let img = DynamicImage::ImageRgb8(image::RgbImage::from_raw(w as u32, h as u32, data).unwrap());
                     image.copy_from(&img, result_x as u32, result_y as u32).unwrap();
                     image_changed = true;
+
+                    chunks_completed += 1;
+                    if chunks_completed == chunks_total {
+                        let duration = start_time.elapsed();
+                        println!("Render completed in {:.5} s", duration.as_secs_f64());
+                    }
 
                     assign_chunk(render_thread, &mut chunks);
                 },
@@ -211,6 +237,8 @@ fn main() {
     }
 
     let scene_file_name = &args[1];
+
+    asset_loader::set_instance(Box::new(AssetLoaderImpl::new()));
 
     let scene = load_scene(&scene_file_name).unwrap();
 
